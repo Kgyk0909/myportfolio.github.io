@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { usePortfolioStore } from '../stores/portfolioStore';
 import type { AssetAllocation, CardConfig, CardId } from '../types';
 import { AllocationInput } from './AllocationInput';
+import { AllocationPieChart } from './AllocationPieChart';
 import {
     REGION_LABELS,
     DEFAULT_REGION_COLORS,
@@ -101,19 +102,91 @@ function SortableCardItem({
         </div>
     );
 }
+
+// テンプレート編集モーダル
+function TemplateSettingsModal({
+    isOpen,
+    onClose,
+    onSave,
+    initialTemplate
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (template: AllocationTemplate) => void;
+    initialTemplate?: AllocationTemplate;
+}) {
+    if (!isOpen) return null;
+
+    const [name, setName] = useState(initialTemplate?.name || '');
+    const [allocation, setAllocation] = useState<AssetAllocation>(
+        initialTemplate?.allocation || { us: 0, japan: 0, developed: 0, emerging: 0, other: 100 }
+    );
+
+    const total = Object.values(allocation).reduce((a, b) => a + b, 0);
+    const isValid = Math.abs(total - 100) < 0.01 && name.trim() !== '';
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                    <h3 className="modal-title">
+                        {initialTemplate ? 'テンプレートを編集' : 'テンプレートを作成'}
+                    </h3>
+                    <button className="btn btn-icon btn-secondary" onClick={onClose}>✕</button>
+                </div>
+                <div className="modal-body">
+                    <div className="form-group">
+                        <label className="form-label">テンプレート名</label>
+                        <input
+                            type="text"
+                            className="form-input"
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                            placeholder="例：全世界株式"
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">アセットクラス比率</label>
+                        <AllocationInput value={allocation} onChange={setAllocation} />
+                    </div>
+                </div>
+                <div className="modal-footer">
+                    <button className="btn btn-secondary" onClick={onClose}>キャンセル</button>
+                    <button
+                        className="btn btn-primary"
+                        disabled={!isValid}
+                        onClick={() => {
+                            onSave({
+                                id: initialTemplate?.id || crypto.randomUUID(),
+                                name: name.trim(),
+                                allocation,
+                                isDefault: initialTemplate?.isDefault ?? false
+                            });
+                            onClose();
+                        }}
+                    >
+                        保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
 export function Settings() {
     const {
         portfolios,
         holdings,
-        loadPortfolios,
-        updatePortfolio
+        loadPortfolios
     } = usePortfolioStore();
 
-    const [targetAllocation, setTargetAllocation] = useState<AssetAllocation>(defaultTarget);
+    const [targetAllocation] = useState<AssetAllocation>(defaultTarget); // ダミー（型維持のため）
     const [regionColors, setRegionColors] = useState<RegionColors>(DEFAULT_REGION_COLORS);
     const [cardConfigs, setCardConfigs] = useState<CardConfig[]>(DEFAULT_CARD_CONFIGS);
     const [templates, setTemplates] = useState<AllocationTemplate[]>([]);
-    const [newTemplateName, setNewTemplateName] = useState('');
+
+    // テンプレートモーダル用ステート
+    const [editingTemplate, setEditingTemplate] = useState<AllocationTemplate | undefined>();
+    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
     // センサー設定（長押し250msでドラッグ開始）
     const sensors = useSensors(
@@ -133,15 +206,6 @@ export function Settings() {
 
     useEffect(() => {
         loadPortfolios();
-        // ストレージから目標アロケーションを取得
-        const stored = localStorage.getItem('targetAllocation');
-        if (stored) {
-            try {
-                setTargetAllocation(JSON.parse(stored) as AssetAllocation);
-            } catch {
-                // ignore
-            }
-        }
         // カスタムカラーを取得
         setRegionColors(getCustomRegionColors());
         // カード設定を取得
@@ -151,18 +215,7 @@ export function Settings() {
         setTemplates(getAllocationTemplates());
     }, [loadPortfolios]);
 
-    const handleSaveTarget = () => {
-        localStorage.setItem('targetAllocation', JSON.stringify(targetAllocation));
-
-        // すべてのポートフォリオに目標を設定
-        portfolios.forEach(p => {
-            if (p.id) {
-                updatePortfolio(p.id, { targetAllocation });
-            }
-        });
-
-        alert('目標アロケーションを保存しました');
-    };
+    // 目標アロケーション保存・取得処理は削除
 
     const handleColorChange = (region: keyof AssetAllocation, color: string) => {
         const newColors = { ...regionColors, [region]: color };
@@ -216,24 +269,27 @@ export function Settings() {
         alert('カード表示設定をリセットしました。');
     };
 
-    const handleAddTemplate = () => {
-        if (!newTemplateName.trim()) {
-            alert('テンプレート名を入力してください');
-            return;
+    const handleSaveTemplate = (template: AllocationTemplate) => {
+        let newTemplates;
+        if (templates.some(t => t.id === template.id)) {
+            // Update
+            newTemplates = templates.map(t => t.id === template.id ? template : t);
+        } else {
+            // Add
+            newTemplates = [...templates, template];
         }
-
-        const newTemplate: AllocationTemplate = {
-            id: crypto.randomUUID(),
-            name: newTemplateName.trim(),
-            allocation: { ...targetAllocation },
-            isDefault: false
-        };
-
-        const newTemplates = [...templates, newTemplate];
         setTemplates(newTemplates);
         saveAllocationTemplates(newTemplates);
-        setNewTemplateName('');
-        alert('現在の目標比率をテンプレートとして保存しました');
+    };
+
+    const handleCreateTemplate = () => {
+        setEditingTemplate(undefined);
+        setIsTemplateModalOpen(true);
+    };
+
+    const handleEditTemplate = (template: AllocationTemplate) => {
+        setEditingTemplate(template);
+        setIsTemplateModalOpen(true);
     };
 
     const handleDeleteTemplate = (id: string) => {
@@ -309,49 +365,20 @@ export function Settings() {
                 </div>
             </div>
 
-            {/* 目標アロケーション */}
-            <div className="card">
-                <h4 className="card-title">目標アセットアロケーション</h4>
-                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '8px 0 16px' }}>
-                    ポートフォリオ全体の目標配分を設定
-                </p>
-                <AllocationInput
-                    value={targetAllocation}
-                    onChange={setTargetAllocation}
-                />
-                <button
-                    className="btn btn-primary"
-                    style={{ marginTop: '16px' }}
-                    onClick={handleSaveTarget}
-                >
-                    💾 保存
-                </button>
-            </div>
-
-            {/* 比率テンプレート管理 */}
+            {/* テンプレート管理（モーダルUIへ移行） */}
             <div className="card">
                 <h4 className="card-title">比率テンプレート管理</h4>
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '8px 0 16px' }}>
                     よく使うアセットアロケーションをテンプレートとして保存・管理できます
                 </p>
 
-                <div style={{ marginBottom: '16px', display: 'flex', gap: '8px' }}>
-                    <input
-                        type="text"
-                        className="form-input"
-                        style={{ flex: 1 }}
-                        placeholder="現在の設定を名前を付けて保存..."
-                        value={newTemplateName}
-                        onChange={(e) => setNewTemplateName(e.target.value)}
-                    />
-                    <button
-                        className="btn btn-primary"
-                        onClick={handleAddTemplate}
-                        disabled={!newTemplateName.trim()}
-                    >
-                        ＋ 追加
-                    </button>
-                </div>
+                <button
+                    className="btn btn-primary"
+                    style={{ marginBottom: '16px', width: '100%' }}
+                    onClick={handleCreateTemplate}
+                >
+                    <i className="fa-solid fa-plus"></i> 新規テンプレート作成
+                </button>
 
                 <div className="templates-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {templates.map(template => (
@@ -372,6 +399,14 @@ export function Settings() {
                                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                                     {template.isDefault ? '初期プリセット' : 'カスタム'}
                                 </span>
+                                <button
+                                    className="btn btn-icon btn-secondary-outline"
+                                    style={{ width: '32px', height: '32px' }}
+                                    onClick={() => handleEditTemplate(template)}
+                                    title="内容を確認・編集"
+                                >
+                                    <i className="fa-solid fa-eye"></i>
+                                </button>
                                 {!template.isDefault && (
                                     <button
                                         className="btn btn-icon btn-danger-outline"
@@ -388,12 +423,31 @@ export function Settings() {
                 </div>
             </div>
 
+            {/* モーダル */}
+            <TemplateSettingsModal
+                isOpen={isTemplateModalOpen}
+                onClose={() => setIsTemplateModalOpen(false)}
+                onSave={handleSaveTemplate}
+                initialTemplate={editingTemplate}
+            />
+
             {/* グラフカラー設定 */}
             <div className="card">
                 <h4 className="card-title">グラフカラー設定</h4>
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '8px 0 16px' }}>
                     各地域のグラフ表示色をカスタマイズ
                 </p>
+                <div style={{ height: '200px', marginBottom: '16px' }}>
+                    <AllocationPieChart
+                        allocation={{
+                            us: 59.1,
+                            developed: 21.1,
+                            japan: 5.1,
+                            emerging: 10.7,
+                            other: 4
+                        }}
+                    />
+                </div>
                 <div className="color-settings">
                     {regions.map(region => (
                         <div className="color-item" key={region}>

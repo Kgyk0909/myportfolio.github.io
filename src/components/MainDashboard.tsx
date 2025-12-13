@@ -194,6 +194,8 @@ export function MainDashboard() {
             await deleteHolding(deleteConfirm.holding.id);
         }
         setDeleteConfirm({ isOpen: false });
+        setShowHoldingForm(false);
+        setEditHolding(undefined);
     };
 
     // ドラッグ終了時の処理

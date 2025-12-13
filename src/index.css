@@ -1435,3 +1435,31 @@ h4 {
   color: var(--accent-orange, #f59e0b);
   font-weight: 500;
 }
+.header-portfolio-name.clickable {
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  display: flex;
+  align-items: center;
+}
+
+.header-portfolio-name.clickable:hover {
+  color: var(--accent-blue);
+}
+
+.header-portfolio-name-input {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--accent-blue);
+  padding: 0 4px;
+  width: auto;
+  min-width: 100px;
+  max-width: 200px;
+}
+
+.header-portfolio-name-input:focus {
+  outline: none;
+}
+

@@ -29,13 +29,22 @@ interface PortfolioState {
     getAllPortfoliosSummary: () => PortfolioSummary;
 }
 
-// 空のアロケーション
+// 空のアロケーション（計算用）
 const emptyAllocation: AssetAllocation = {
     us: 0,
     japan: 0,
     developed: 0,
     emerging: 0,
     other: 0
+};
+
+// デフォルトのアロケーション（新規作成用）
+const defaultPortfolioAllocation: AssetAllocation = {
+    us: 59.1,
+    developed: 21.1,
+    japan: 5.1,
+    emerging: 10.7,
+    other: 4
 };
 
 export const usePortfolioStore = create<PortfolioState>((set, get) => ({
@@ -72,7 +81,7 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
         const portfolio: Omit<Portfolio, 'id'> = {
             name,
             createdAt: new Date(),
-            targetAllocation
+            targetAllocation: targetAllocation || defaultPortfolioAllocation
         };
         const id = await db.portfolios.add(portfolio as Portfolio);
         const newPortfolio = { ...portfolio, id } as Portfolio;

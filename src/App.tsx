@@ -12,13 +12,32 @@ type Page = 'main' | 'settings';
 function App() {
     const [currentPage, setCurrentPage] = useState<Page>('main');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const { loadPortfolios, holdings, updatePrices, portfolios, selectedPortfolioId } = usePortfolioStore();
+    const { loadPortfolios, holdings, updatePrices, portfolios, selectedPortfolioId, updatePortfolio } = usePortfolioStore();
     const [isUpdating, setIsUpdating] = useState(false);
     const hasUpdatedRef = useRef(false);
+
+    // ポートフォリオ名編集用ステート
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [editingName, setEditingName] = useState('');
 
     useEffect(() => {
         loadPortfolios();
     }, [loadPortfolios]);
+
+    // ハンドラ
+    const handleNameClick = () => {
+        if (selectedPortfolio) {
+            setEditingName(selectedPortfolio.name);
+            setIsEditingName(true);
+        }
+    };
+
+    const handleNameSave = async () => {
+        if (selectedPortfolio?.id && editingName.trim() && editingName.trim() !== selectedPortfolio.name) {
+            await updatePortfolio(selectedPortfolio.id, { name: editingName.trim() });
+        }
+        setIsEditingName(false);
+    };
 
     // 価格更新処理
     const handleUpdatePrices = useCallback(async () => {
@@ -33,7 +52,8 @@ function App() {
 
             const updatedHoldings = holdings.map(h => {
                 if (h.ticker && prices.has(h.ticker)) {
-                    const newPrice = prices.get(h.ticker)?.price ?? h.currentPrice;
+                    const fetchedPrice = prices.get(h.ticker)?.price;
+                    const newPrice = fetchedPrice !== undefined ? fetchedPrice : h.currentPrice;
                     return {
                         ...h,
                         currentPrice: newPrice,
@@ -88,7 +108,28 @@ function App() {
                         <i className="fa-solid fa-bars"></i>
                     </button>
                     {selectedPortfolio && currentPage === 'main' && (
-                        <span className="header-portfolio-name">{selectedPortfolio.name}</span>
+                        isEditingName ? (
+                            <input
+                                className="header-portfolio-name-input"
+                                value={editingName}
+                                onChange={e => setEditingName(e.target.value)}
+                                onBlur={handleNameSave}
+                                onKeyDown={e => {
+                                    if (e.key === 'Enter') handleNameSave();
+                                }}
+                                autoFocus
+                                onClick={e => e.stopPropagation()}
+                            />
+                        ) : (
+                            <span
+                                className="header-portfolio-name clickable"
+                                onClick={handleNameClick}
+                                title="クリックして名前を編集"
+                            >
+                                {selectedPortfolio.name}
+                                <i className="fa-solid fa-pen" style={{ fontSize: '0.7em', marginLeft: '6px', opacity: 0.5 }}></i>
+                            </span>
+                        )
                     )}
                 </div>
                 <div className="header-actions">
