@@ -14,9 +14,10 @@ ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 interface AllocationPieChartProps {
     allocation: AssetAllocation;
     title?: string;
+    showLegend?: boolean;
 }
 
-export function AllocationPieChart({ allocation, title }: AllocationPieChartProps) {
+export function AllocationPieChart({ allocation, title, showLegend = true }: AllocationPieChartProps) {
     const regionColors = getCustomRegionColors();
     const regions = Object.keys(allocation) as (keyof AssetAllocation)[];
     const values = regions.map(key => allocation[key]);
@@ -70,17 +71,19 @@ export function AllocationPieChart({ allocation, title }: AllocationPieChartProp
             <div className="chart-container">
                 <Pie data={data} options={options} />
             </div>
-            <div className="chart-legend">
-                {regions.map(key => (
-                    <div className="legend-item" key={key}>
-                        <div
-                            className="legend-color"
-                            style={{ backgroundColor: regionColors[key] }}
-                        />
-                        <span>{REGION_LABELS[key]}: {allocation[key].toFixed(1)}%</span>
-                    </div>
-                ))}
-            </div>
+            {showLegend && (
+                <div className="chart-legend">
+                    {regions.map(key => (
+                        <div className="legend-item" key={key}>
+                            <div
+                                className="legend-color"
+                                style={{ backgroundColor: regionColors[key] }}
+                            />
+                            <span>{REGION_LABELS[key]}: {allocation[key].toFixed(1)}%</span>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

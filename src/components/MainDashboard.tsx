@@ -216,9 +216,9 @@ export function MainDashboard() {
 
     // カード表示関数
     const renderCard = (cardId: CardId) => {
-        // 全銘柄に取得額があるかチェック
+        // 全銘柄に取得額があるかチェック（手入力totalCostまたは計算可能な状態）
         const allHaveCost = portfolioHoldings.length > 0 && portfolioHoldings.every(h =>
-            h.shares && h.averageCost && h.shares > 0 && h.averageCost > 0
+            (h.totalCost && h.totalCost > 0) || (h.shares && h.averageCost && h.shares > 0 && h.averageCost > 0)
         );
 
         switch (cardId) {

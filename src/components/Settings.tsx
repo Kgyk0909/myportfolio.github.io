@@ -108,12 +108,14 @@ function TemplateSettingsModal({
     isOpen,
     onClose,
     onSave,
-    initialTemplate
+    initialTemplate,
+    readonly
 }: {
     isOpen: boolean;
     onClose: () => void;
     onSave: (template: AllocationTemplate) => void;
     initialTemplate?: AllocationTemplate;
+    readonly?: boolean;
 }) {
     if (!isOpen) return null;
 
@@ -125,12 +127,14 @@ function TemplateSettingsModal({
     const total = Object.values(allocation).reduce((a, b) => a + b, 0);
     const isValid = Math.abs(total - 100) < 0.01 && name.trim() !== '';
 
+    // readonlyの場合は保存ボタンを表示しない
+    // 画面外クリックでのクローズは無効化（onClick削除）
     return (
-        <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-overlay">
             <div className="modal-content" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <h3 className="modal-title">
-                        {initialTemplate ? 'テンプレートを編集' : 'テンプレートを作成'}
+                        {readonly ? 'テンプレート詳細' : (initialTemplate ? 'テンプレートを編集' : 'テンプレートを作成')}
                     </h3>
                     <button className="btn btn-icon btn-secondary" onClick={onClose}>✕</button>
                 </div>
@@ -143,30 +147,39 @@ function TemplateSettingsModal({
                             value={name}
                             onChange={e => setName(e.target.value)}
                             placeholder="例：全世界株式"
+                            disabled={readonly}
                         />
                     </div>
                     <div className="form-group">
                         <label className="form-label">アセットクラス比率</label>
-                        <AllocationInput value={allocation} onChange={setAllocation} />
+                        {/* AllocationInputにもdisabledを渡す必要があるが、現状ないのでviewのみにするか、AllocationInputを改修するか。
+                            簡易的に、readonlyの場合はpointer-events-noneで操作不可にする */}
+                        <div style={readonly ? { pointerEvents: 'none', opacity: 0.7 } : {}}>
+                            <AllocationInput value={allocation} onChange={setAllocation} />
+                        </div>
                     </div>
                 </div>
                 <div className="modal-footer">
-                    <button className="btn btn-secondary" onClick={onClose}>キャンセル</button>
-                    <button
-                        className="btn btn-primary"
-                        disabled={!isValid}
-                        onClick={() => {
-                            onSave({
-                                id: initialTemplate?.id || crypto.randomUUID(),
-                                name: name.trim(),
-                                allocation,
-                                isDefault: initialTemplate?.isDefault ?? false
-                            });
-                            onClose();
-                        }}
-                    >
-                        保存
+                    <button className="btn btn-secondary" onClick={onClose}>
+                        {readonly ? '閉じる' : 'キャンセル'}
                     </button>
+                    {!readonly && (
+                        <button
+                            className="btn btn-primary"
+                            disabled={!isValid}
+                            onClick={() => {
+                                onSave({
+                                    id: initialTemplate?.id || crypto.randomUUID(),
+                                    name: name.trim(),
+                                    allocation,
+                                    isDefault: initialTemplate?.isDefault ?? false
+                                });
+                                onClose();
+                            }}
+                        >
+                            保存
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
@@ -403,9 +416,9 @@ export function Settings() {
                                     className="btn btn-icon btn-secondary-outline"
                                     style={{ width: '32px', height: '32px' }}
                                     onClick={() => handleEditTemplate(template)}
-                                    title="内容を確認・編集"
+                                    title={template.isDefault ? "内容を確認" : "編集"}
                                 >
-                                    <i className="fa-solid fa-eye"></i>
+                                    <i className={`fa-solid ${template.isDefault ? 'fa-eye' : 'fa-pen'}`}></i>
                                 </button>
                                 {!template.isDefault && (
                                     <button
@@ -429,6 +442,7 @@ export function Settings() {
                 onClose={() => setIsTemplateModalOpen(false)}
                 onSave={handleSaveTemplate}
                 initialTemplate={editingTemplate}
+                readonly={editingTemplate?.isDefault}
             />
 
             {/* グラフカラー設定 */}
@@ -437,8 +451,10 @@ export function Settings() {
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '8px 0 16px' }}>
                     各地域のグラフ表示色をカスタマイズ
                 </p>
-                <div style={{ height: '200px', marginBottom: '16px' }}>
+                {/* グラフサイズと凡例制御 */}
+                <div style={{ height: '180px', marginBottom: '16px', transform: 'scale(0.9)', transformOrigin: 'center' }}>
                     <AllocationPieChart
+                        showLegend={false}
                         allocation={{
                             us: 59.1,
                             developed: 21.1,
