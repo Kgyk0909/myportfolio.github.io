@@ -15,15 +15,16 @@ export default defineConfig({
                 theme_color: '#1e3a5f',
                 background_color: '#f5f7fa',
                 display: 'standalone',
-                start_url: '/',
+                scope: '/myportfolio.github.io/',
+                start_url: '/myportfolio.github.io/',
                 icons: [
                     {
-                        src: 'assets/img/icon-192x192.png',
+                        src: '/myportfolio.github.io/assets/img/icon-192x192.png',
                         sizes: '192x192',
                         type: 'image/png'
                     },
                     {
-                        src: 'assets/img/icon-512x512.png',
+                        src: '/myportfolio.github.io/assets/img/icon-512x512.png',
                         sizes: '512x512',
                         type: 'image/png'
                     }
