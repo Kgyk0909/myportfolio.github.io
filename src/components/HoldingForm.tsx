@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { usePortfolioStore } from '../stores/portfolioStore';
+import { fetchPrice } from '../services/priceService';
 import { AllocationInput } from './AllocationInput';
 import type { Holding, AssetAllocation } from '../types';
 
@@ -29,9 +30,35 @@ export function HoldingForm({ portfolioId, onClose, editHolding }: HoldingFormPr
     );
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // 価格取得関連
+    const [isFetchingPrice, setIsFetchingPrice] = useState(false);
+    const [fetchedPrice, setFetchedPrice] = useState<number | null>(editHolding?.currentPrice ?? null);
+    const [priceError, setPriceError] = useState(false);
+
+    const handleFetchPrice = async () => {
+        if (!ticker.trim()) return;
+
+        setIsFetchingPrice(true);
+        setPriceError(false);
+        setFetchedPrice(null);
+
+        try {
+            const priceData = await fetchPrice(ticker.trim().toUpperCase());
+            if (priceData) {
+                setFetchedPrice(priceData.price);
+            } else {
+                setPriceError(true);
+            }
+        } catch {
+            setPriceError(true);
+        } finally {
+            setIsFetchingPrice(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name.trim() || !ticker.trim() || !shares) return;
+        if (!ticker.trim() || !shares || !averageCost) return;
 
         const total = Object.values(allocation).reduce((a, b) => a + b, 0);
         if (Math.abs(total - 100) > 0.01) {
@@ -46,9 +73,9 @@ export function HoldingForm({ portfolioId, onClose, editHolding }: HoldingFormPr
                 name: name.trim(),
                 ticker: ticker.trim().toUpperCase(),
                 shares: Number(shares),
-                averageCost: averageCost ? Number(averageCost) : undefined,
+                averageCost: Number(averageCost),
                 allocation,
-                currentPrice: editHolding?.currentPrice
+                currentPrice: fetchedPrice ?? editHolding?.currentPrice
             };
 
             if (editHolding?.id) {
@@ -65,7 +92,7 @@ export function HoldingForm({ portfolioId, onClose, editHolding }: HoldingFormPr
     };
 
     const total = Object.values(allocation).reduce((a, b) => a + b, 0);
-    const isValid = Math.abs(total - 100) < 0.01 && name.trim() && ticker.trim() && shares;
+    const isValid = Math.abs(total - 100) < 0.01 && ticker.trim() && shares && averageCost;
 
     return (
         <div className="modal-overlay" onClick={onClose}>
@@ -79,14 +106,13 @@ export function HoldingForm({ portfolioId, onClose, editHolding }: HoldingFormPr
                 <form onSubmit={handleSubmit}>
                     <div className="modal-body">
                         <div className="form-group">
-                            <label className="form-label">銘柄名</label>
+                            <label className="form-label">銘柄名（任意）</label>
                             <input
                                 type="text"
                                 className="form-input"
                                 placeholder="例：eMAXIS Slim 全世界株式"
                                 value={name}
                                 onChange={e => setName(e.target.value)}
-                                required
                             />
                         </div>
 
@@ -101,6 +127,47 @@ export function HoldingForm({ portfolioId, onClose, editHolding }: HoldingFormPr
                                 required
                             />
                             <p className="form-hint">yfinanceで取得可能なコードを入力</p>
+
+                            {/* 価格取得ボタン */}
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                style={{ marginTop: '8px' }}
+                                onClick={handleFetchPrice}
+                                disabled={!ticker.trim() || isFetchingPrice}
+                            >
+                                {isFetchingPrice ? '取得中...' : '🔍 価格を取得'}
+                            </button>
+
+                            {/* 取得した価格表示 */}
+                            {fetchedPrice !== null && (
+                                <div className="fetched-price-display" style={{
+                                    marginTop: '8px',
+                                    padding: '8px 12px',
+                                    background: 'rgba(34, 197, 94, 0.1)',
+                                    borderRadius: '8px',
+                                    color: 'var(--accent-green)',
+                                    fontSize: '0.875rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}>
+                                    <span>✓</span>
+                                    <span>現在価格: ¥{fetchedPrice.toLocaleString()}</span>
+                                </div>
+                            )}
+                            {priceError && (
+                                <div className="price-error-display" style={{
+                                    marginTop: '8px',
+                                    padding: '8px 12px',
+                                    background: 'rgba(239, 68, 68, 0.1)',
+                                    borderRadius: '8px',
+                                    color: 'var(--accent-red)',
+                                    fontSize: '0.875rem'
+                                }}>
+                                    ⚠ 価格を取得できませんでした（ティッカーを確認してください）
+                                </div>
+                            )}
                         </div>
 
                         <div className="form-group">
@@ -118,7 +185,7 @@ export function HoldingForm({ portfolioId, onClose, editHolding }: HoldingFormPr
                         </div>
 
                         <div className="form-group">
-                            <label className="form-label">平均取得価格（任意）</label>
+                            <label className="form-label">平均取得価格 *</label>
                             <input
                                 type="number"
                                 className="form-input"
@@ -127,6 +194,7 @@ export function HoldingForm({ portfolioId, onClose, editHolding }: HoldingFormPr
                                 onChange={e => setAverageCost(e.target.value)}
                                 min="0"
                                 step="0.01"
+                                required
                             />
                         </div>
 

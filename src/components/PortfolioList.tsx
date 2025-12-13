@@ -168,34 +168,53 @@ export function PortfolioList() {
                             </div>
                         ) : (
                             <div className="holdings-list">
-                                {portfolioHoldings.map(holding => (
-                                    <div
-                                        className="holding-item"
-                                        key={holding.id}
-                                        onClick={() => handleEditHolding(holding)}
-                                    >
-                                        <div className="holding-info">
-                                            <div className="holding-name">{holding.name}</div>
-                                            <div className="holding-ticker">{holding.ticker}</div>
-                                        </div>
-                                        <div className="holding-value">
-                                            <div className="holding-price">
-                                                {formatCurrency((holding.currentPrice ?? 0) * holding.shares)}
-                                            </div>
-                                            <div className="holding-shares">{holding.shares}口</div>
-                                        </div>
-                                        <button
-                                            className="btn btn-danger btn-icon"
-                                            style={{ marginLeft: '8px' }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (holding.id) handleDeleteHolding(holding.id);
-                                            }}
+                                {portfolioHoldings.map(holding => {
+                                    const currentValue = (holding.currentPrice ?? 0) * holding.shares;
+                                    const costValue = (holding.averageCost ?? 0) * holding.shares;
+                                    const gainPercent = costValue > 0 ? ((currentValue - costValue) / costValue) * 100 : 0;
+
+                                    return (
+                                        <div
+                                            className="holding-item holding-item-detailed"
+                                            key={holding.id}
+                                            onClick={() => handleEditHolding(holding)}
                                         >
-                                            🗑
-                                        </button>
-                                    </div>
-                                ))}
+                                            <div className="holding-main">
+                                                <div className="holding-header">
+                                                    <div className="holding-name">{holding.name || holding.ticker}</div>
+                                                    {holding.name && <div className="holding-ticker">{holding.ticker}</div>}
+                                                </div>
+                                                <div className="holding-stats">
+                                                    <div className="holding-stat-row">
+                                                        <span className="stat-label">保有数：</span>
+                                                        <span className="stat-value">{holding.shares.toLocaleString()}口</span>
+                                                    </div>
+                                                    <div className="holding-stat-row">
+                                                        <span className="stat-label">取得額：</span>
+                                                        <span className="stat-value">{formatCurrency(costValue)}</span>
+                                                    </div>
+                                                    <div className="holding-stat-row">
+                                                        <span className="stat-label">評価額：</span>
+                                                        <span className="stat-value">{formatCurrency(currentValue)}</span>
+                                                    </div>
+                                                    <div className={`holding-gain-badge ${gainPercent >= 0 ? 'positive' : 'negative'}`}>
+                                                        {gainPercent >= 0 ? '+' : ''}{gainPercent.toFixed(1)}%
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button
+                                                className="btn btn-danger btn-icon"
+                                                style={{ marginLeft: '8px', flexShrink: 0 }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (holding.id) handleDeleteHolding(holding.id);
+                                                }}
+                                            >
+                                                🗑
+                                            </button>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>

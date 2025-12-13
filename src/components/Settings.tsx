@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { usePortfolioStore } from '../stores/portfolioStore';
-import { fetchPrices } from '../services/priceService';
 import type { AssetAllocation } from '../types';
 import { AllocationInput } from './AllocationInput';
 
@@ -17,12 +16,9 @@ export function Settings() {
         portfolios,
         holdings,
         loadPortfolios,
-        updatePortfolio,
-        updatePrices
+        updatePortfolio
     } = usePortfolioStore();
 
-    const [isUpdating, setIsUpdating] = useState(false);
-    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [targetAllocation, setTargetAllocation] = useState<AssetAllocation>(defaultTarget);
 
     useEffect(() => {
@@ -37,29 +33,6 @@ export function Settings() {
             }
         }
     }, [loadPortfolios]);
-
-    const handleUpdatePrices = useCallback(async () => {
-        if (holdings.length === 0) return;
-
-        setIsUpdating(true);
-        try {
-            const tickers = holdings.map(h => h.ticker);
-            const prices = await fetchPrices(tickers);
-
-            const updatedHoldings = holdings.map(h => ({
-                ...h,
-                currentPrice: prices.get(h.ticker)?.price ?? h.currentPrice
-            }));
-
-            await updatePrices(updatedHoldings);
-            setLastUpdated(new Date());
-        } catch (error) {
-            console.error('Failed to update prices:', error);
-            alert('価格の更新に失敗しました。APIサーバーが起動しているか確認してください。');
-        } finally {
-            setIsUpdating(false);
-        }
-    }, [holdings, updatePrices]);
 
     const handleSaveTarget = () => {
         localStorage.setItem('targetAllocation', JSON.stringify(targetAllocation));
@@ -95,38 +68,6 @@ export function Settings() {
         <div className="settings">
             <h2 style={{ marginBottom: '24px' }}>設定</h2>
 
-            {/* 価格更新 */}
-            <div className="card">
-                <h4 className="card-title">価格データ更新</h4>
-                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '8px 0 16px' }}>
-                    登録銘柄の最新価格を取得します
-                </p>
-                {lastUpdated && (
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                        最終更新: {lastUpdated.toLocaleString('ja-JP')}
-                    </p>
-                )}
-                <button
-                    className="btn btn-primary"
-                    onClick={handleUpdatePrices}
-                    disabled={isUpdating || holdings.length === 0}
-                >
-                    {isUpdating ? (
-                        <>
-                            <span className="loading-spinner" style={{ width: '16px', height: '16px' }} />
-                            更新中...
-                        </>
-                    ) : (
-                        '🔄 価格を更新'
-                    )}
-                </button>
-                {holdings.length === 0 && (
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px' }}>
-                        ※ 銘柄を登録してから更新してください
-                    </p>
-                )}
-            </div>
-
             {/* 目標アロケーション */}
             <div className="card">
                 <h4 className="card-title">目標アセットアロケーション</h4>
@@ -158,24 +99,6 @@ export function Settings() {
                 >
                     📥 JSONエクスポート
                 </button>
-            </div>
-
-            {/* APIステータス */}
-            <div className="card">
-                <h4 className="card-title">API設定</h4>
-                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '8px 0' }}>
-                    価格取得API URL:
-                </p>
-                <code style={{
-                    display: 'block',
-                    padding: '8px 12px',
-                    background: 'var(--primary-100)',
-                    borderRadius: '8px',
-                    fontSize: '0.875rem',
-                    wordBreak: 'break-all'
-                }}>
-                    {import.meta.env.VITE_API_URL || 'http://localhost:8000'}
-                </code>
             </div>
         </div>
     );
