@@ -22,6 +22,7 @@ interface PortfolioState {
     updateHolding: (id: number, updates: Partial<Holding>) => Promise<void>;
     deleteHolding: (id: number) => Promise<void>;
     updatePrices: (holdings: Holding[]) => Promise<void>;
+    reorderHoldings: (portfolioId: number, orderedIds: number[]) => Promise<void>;
 
     // 計算
     getPortfolioSummary: (portfolioId: number) => PortfolioSummary;
@@ -112,6 +113,8 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
                 .where('portfolioId')
                 .equals(portfolioId)
                 .toArray();
+            // sortOrderでソート
+            holdings.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
             set({ holdings, isLoading: false });
         } catch (error) {
             set({ error: String(error), isLoading: false });
@@ -166,6 +169,21 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
     getAllPortfoliosSummary: (): PortfolioSummary => {
         const holdings = get().holdings;
         return calculateSummary(holdings);
+    },
+
+    reorderHoldings: async (portfolioId: number, orderedIds: number[]) => {
+        // 各holdingのsortOrderを更新
+        for (let i = 0; i < orderedIds.length; i++) {
+            await db.holdings.update(orderedIds[i], { sortOrder: i });
+        }
+        // ステートを更新
+        set(state => ({
+            holdings: state.holdings.map(h => {
+                if (h.portfolioId !== portfolioId) return h;
+                const newOrder = orderedIds.indexOf(h.id!);
+                return { ...h, sortOrder: newOrder >= 0 ? newOrder : h.sortOrder };
+            }).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+        }));
     }
 }));
 

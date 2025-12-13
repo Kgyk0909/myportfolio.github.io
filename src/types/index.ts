@@ -11,6 +11,7 @@ export interface AssetAllocation {
 export interface Holding {
     id?: number;
     portfolioId: number;
+    sortOrder?: number;              // 並び順
     name: string;                    // 銘柄名（自由入力）
     ticker: string;                  // ティッカーシンボル（必須）
     shares: number;                  // 保有口数（必須）
@@ -18,6 +19,50 @@ export interface Holding {
     allocation: AssetAllocation;     // アセットクラス比率（必須）
     currentPrice?: number;           // 現在の価格
     lastUpdated?: Date;              // 最終更新日時
+}
+
+// カードID
+export type CardId = 'summary' | 'allocation' | 'comparison' | 'holdings';
+
+// カード設定
+export interface CardConfig {
+    id: CardId;
+    visible: boolean;  // 表示/非表示
+    order: number;     // 表示順
+}
+
+// デフォルトカード設定
+export const DEFAULT_CARD_CONFIGS: CardConfig[] = [
+    { id: 'summary', visible: true, order: 0 },
+    { id: 'allocation', visible: true, order: 1 },
+    { id: 'comparison', visible: true, order: 2 },
+    { id: 'holdings', visible: true, order: 3 },
+];
+
+// カードラベル
+export const CARD_LABELS: Record<CardId, string> = {
+    summary: '評価額',
+    allocation: '地域別分散状況',
+    comparison: '目標との比較',
+    holdings: '保有銘柄',
+};
+
+// カード設定をLocalStorageから取得
+export function getCardConfigs(): CardConfig[] {
+    const stored = localStorage.getItem('cardConfigs');
+    if (stored) {
+        try {
+            return JSON.parse(stored) as CardConfig[];
+        } catch {
+            return DEFAULT_CARD_CONFIGS;
+        }
+    }
+    return DEFAULT_CARD_CONFIGS;
+}
+
+// カード設定をLocalStorageに保存
+export function saveCardConfigs(configs: CardConfig[]): void {
+    localStorage.setItem('cardConfigs', JSON.stringify(configs));
 }
 
 // ポートフォリオ
