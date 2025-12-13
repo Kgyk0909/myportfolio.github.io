@@ -81,6 +81,16 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
     const [searchResults, setSearchResults] = useState<FundData[]>([]);
     const [showSearchResults, setShowSearchResults] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    // 銘柄名入力欄の自動リサイズ
+    useEffect(() => {
+        if (textareaRef.current) {
+            // 一度高さをリセットしないと縮小しない
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        }
+    }, [name]);
 
     // 評価額の自動計算可能かどうか (価格 × 口数)
     const canAutoCalculateValue = fetchedPrice !== null && shares !== '' && Number(shares) > 0;
@@ -346,18 +356,20 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
                         <div className="form-group">
                             <label className="form-label">銘柄名 *</label>
                             <textarea
+                                ref={textareaRef}
                                 className="form-input"
                                 placeholder="例：eMAXIS Slim 全世界株式"
                                 value={name}
                                 onChange={e => setName(e.target.value)}
                                 required
-                                rows={2}
+                                rows={1}
                                 style={{
-                                    minHeight: '4.5rem',
-                                    resize: 'vertical',
+                                    minHeight: '42px', // 1行分の高さ
+                                    resize: 'none',
                                     lineHeight: '1.5',
-                                    paddingTop: '8px',
-                                    paddingBottom: '8px'
+                                    paddingTop: '9px',
+                                    paddingBottom: '9px',
+                                    overflow: 'hidden'
                                 }}
                             />
                         </div>
