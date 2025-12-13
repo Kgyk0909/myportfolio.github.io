@@ -12,6 +12,9 @@ import {
     CARD_LABELS,
     getCardConfigs,
     saveCardConfigs,
+    type AllocationTemplate,
+    getAllocationTemplates,
+    saveAllocationTemplates,
 } from '../types';
 
 // dnd-kit imports
@@ -98,7 +101,6 @@ function SortableCardItem({
         </div>
     );
 }
-
 export function Settings() {
     const {
         portfolios,
@@ -110,6 +112,8 @@ export function Settings() {
     const [targetAllocation, setTargetAllocation] = useState<AssetAllocation>(defaultTarget);
     const [regionColors, setRegionColors] = useState<RegionColors>(DEFAULT_REGION_COLORS);
     const [cardConfigs, setCardConfigs] = useState<CardConfig[]>(DEFAULT_CARD_CONFIGS);
+    const [templates, setTemplates] = useState<AllocationTemplate[]>([]);
+    const [newTemplateName, setNewTemplateName] = useState('');
 
     // センサー設定（長押し250msでドラッグ開始）
     const sensors = useSensors(
@@ -141,7 +145,10 @@ export function Settings() {
         // カスタムカラーを取得
         setRegionColors(getCustomRegionColors());
         // カード設定を取得
+        // カード設定を取得
         setCardConfigs(getCardConfigs());
+        // テンプレートを取得
+        setTemplates(getAllocationTemplates());
     }, [loadPortfolios]);
 
     const handleSaveTarget = () => {
@@ -207,6 +214,33 @@ export function Settings() {
         setCardConfigs(DEFAULT_CARD_CONFIGS);
         saveCardConfigs(DEFAULT_CARD_CONFIGS);
         alert('カード表示設定をリセットしました。');
+    };
+
+    const handleAddTemplate = () => {
+        if (!newTemplateName.trim()) {
+            alert('テンプレート名を入力してください');
+            return;
+        }
+
+        const newTemplate: AllocationTemplate = {
+            id: crypto.randomUUID(),
+            name: newTemplateName.trim(),
+            allocation: { ...targetAllocation },
+            isDefault: false
+        };
+
+        const newTemplates = [...templates, newTemplate];
+        setTemplates(newTemplates);
+        saveAllocationTemplates(newTemplates);
+        setNewTemplateName('');
+        alert('現在の目標比率をテンプレートとして保存しました');
+    };
+
+    const handleDeleteTemplate = (id: string) => {
+        if (!confirm('このテンプレートを削除してもよろしいですか？')) return;
+        const newTemplates = templates.filter(t => t.id !== id);
+        setTemplates(newTemplates);
+        saveAllocationTemplates(newTemplates);
     };
 
     const handleExportData = () => {
@@ -292,6 +326,66 @@ export function Settings() {
                 >
                     💾 保存
                 </button>
+            </div>
+
+            {/* 比率テンプレート管理 */}
+            <div className="card">
+                <h4 className="card-title">比率テンプレート管理</h4>
+                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '8px 0 16px' }}>
+                    よく使うアセットアロケーションをテンプレートとして保存・管理できます
+                </p>
+
+                <div style={{ marginBottom: '16px', display: 'flex', gap: '8px' }}>
+                    <input
+                        type="text"
+                        className="form-input"
+                        style={{ flex: 1 }}
+                        placeholder="現在の設定を名前を付けて保存..."
+                        value={newTemplateName}
+                        onChange={(e) => setNewTemplateName(e.target.value)}
+                    />
+                    <button
+                        className="btn btn-primary"
+                        onClick={handleAddTemplate}
+                        disabled={!newTemplateName.trim()}
+                    >
+                        ＋ 追加
+                    </button>
+                </div>
+
+                <div className="templates-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {templates.map(template => (
+                        <div
+                            key={template.id}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '12px',
+                                background: 'var(--bg-secondary)',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: 'var(--border-radius)'
+                            }}
+                        >
+                            <span style={{ fontWeight: 500 }}>{template.name}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                    {template.isDefault ? '初期プリセット' : 'カスタム'}
+                                </span>
+                                {!template.isDefault && (
+                                    <button
+                                        className="btn btn-icon btn-danger-outline"
+                                        style={{ width: '32px', height: '32px', color: 'var(--accent-red)' }}
+                                        onClick={() => handleDeleteTemplate(template.id)}
+                                        title="削除"
+                                    >
+                                        <i className="fa-solid fa-trash"></i>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             {/* グラフカラー設定 */}

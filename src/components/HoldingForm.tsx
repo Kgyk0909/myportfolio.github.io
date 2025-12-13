@@ -4,6 +4,7 @@ import { fetchPrice } from '../services/priceService';
 import { AllocationInput } from './AllocationInput';
 import type { Holding, AssetAllocation } from '../types';
 import fundsData from '../data/funds.json';
+import { getAllocationTemplates, type AllocationTemplate } from '../types';
 
 // 投資信託データの型
 interface FundData {
@@ -34,11 +35,11 @@ const parseNumber = (val: string): string => {
 };
 
 const emptyAllocation: AssetAllocation = {
-    us: 60,
+    us: 0,
     japan: 0,
-    developed: 20,
-    emerging: 15,
-    other: 5
+    developed: 0,
+    emerging: 0,
+    other: 100
 };
 
 interface HoldingFormProps {
@@ -58,6 +59,8 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
     const [allocation, setAllocation] = useState<AssetAllocation>(
         editHolding?.allocation ?? emptyAllocation
     );
+    const [templates] = useState<AllocationTemplate[]>(getAllocationTemplates());
+    const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // 価格取得関連
@@ -193,6 +196,18 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
         }
     };
 
+    const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const templateId = e.target.value;
+        setSelectedTemplateId(templateId);
+
+        if (!templateId) return;
+
+        const template = templates.find(t => t.id === templateId);
+        if (template) {
+            setAllocation({ ...template.allocation });
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!name.trim() || !currentValue) return;
@@ -280,7 +295,7 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
                                 onFocus={() => setShowSearchResults(true)}
                             />
                             {showSearchResults && searchResults.length > 0 && (
-                                <div className="fund-search-results">
+                                <div className="fund-search-results" style={{ maxHeight: '400px' }}>
                                     {searchResults.map(fund => (
                                         <div
                                             key={fund.id}
@@ -493,6 +508,23 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
                         {/* アセットクラス比率 */}
                         <div className="form-group">
                             <label className="form-label">アセットクラス比率 *</label>
+
+                            {/* テンプレート選択 */}
+                            <div style={{ marginBottom: '12px' }}>
+                                <select
+                                    className="form-input"
+                                    style={{ fontSize: '0.875rem', padding: '8px' }}
+                                    value={selectedTemplateId}
+                                    onChange={handleTemplateChange}
+                                >
+                                    <option value="">テンプレートを選択...</option>
+                                    {templates.map(t => (
+                                        <option key={t.id} value={t.id}>
+                                            {t.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                             <AllocationInput
                                 value={allocation}
                                 onChange={setAllocation}

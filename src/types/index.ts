@@ -135,3 +135,75 @@ export function getCustomRegionColors(): RegionColors {
 export function saveCustomRegionColors(colors: RegionColors): void {
     localStorage.setItem('regionColors', JSON.stringify(colors));
 }
+
+// アセットクラス比率テンプレート
+export interface AllocationTemplate {
+    id: string;
+    name: string;
+    allocation: AssetAllocation;
+    isDefault: boolean; // 削除不可フラグ
+}
+
+// デフォルトテンプレート
+export const DEFAULT_ALLOCATION_TEMPLATES: AllocationTemplate[] = [
+    {
+        id: 'global-equity',
+        name: '全世界株式',
+        allocation: { us: 63.1, japan: 5.1, developed: 21.1, emerging: 10.7, other: 0 },
+        isDefault: true
+    },
+    {
+        id: 'developed-equity',
+        name: '先進国株式',
+        allocation: { us: 71.3, japan: 0, developed: 28.7, emerging: 0, other: 0 },
+        isDefault: true
+    },
+    {
+        id: 'us-equity',
+        name: '米国株式',
+        allocation: { us: 100, japan: 0, developed: 0, emerging: 0, other: 0 },
+        isDefault: true
+    },
+    {
+        id: 'japan-equity',
+        name: '国内株式',
+        allocation: { us: 0, japan: 100, developed: 0, emerging: 0, other: 0 },
+        isDefault: true
+    },
+    {
+        id: 'emerging-equity',
+        name: '新興国株式',
+        allocation: { us: 0, japan: 0, developed: 0, emerging: 100, other: 0 },
+        isDefault: true
+    }
+];
+
+// テンプレートをLocalStorageから取得
+export function getAllocationTemplates(): AllocationTemplate[] {
+    const stored = localStorage.getItem('allocationTemplates');
+    if (stored) {
+        try {
+            const templates = JSON.parse(stored) as AllocationTemplate[];
+            // デフォルトテンプレートが不足している場合は補完する（アップデート対応）
+            const merged = [...DEFAULT_ALLOCATION_TEMPLATES];
+
+            // 保存済みのデフォルト以外のテンプレートを追加
+            templates.forEach(t => {
+                if (!t.isDefault) {
+                    merged.push(t);
+                }
+            });
+
+            return merged;
+        } catch {
+            return DEFAULT_ALLOCATION_TEMPLATES;
+        }
+    }
+    return DEFAULT_ALLOCATION_TEMPLATES;
+}
+
+// テンプレートをLocalStorageに保存
+export function saveAllocationTemplates(templates: AllocationTemplate[]): void {
+    // デフォルト以外のものだけ保存する手もあるが、順序保持などのために全保存する
+    localStorage.setItem('allocationTemplates', JSON.stringify(templates));
+}
