@@ -70,7 +70,7 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
 
     // 表示条件
     // ティッカー: 自動計算モードで非表示、手動モードで表示、入力済みなら常時表示
-    const showTicker = isManualValue || ticker.trim() !== '';
+    const showTicker = !isManualValue || ticker.trim() !== '';
 
     // 平均取得価格: 取得額自動計算モードで表示、手動で非表示、入力済みなら常時表示
     const showAverageCost = !isManualCost || averageCost !== '';
@@ -154,23 +154,25 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
 
     // 評価額モード切替
     const handleToggleValueMode = () => {
-        if (isManualValue && canAutoCalculateValue) {
-            setIsManualValue(false);
+        const nextIsManual = !isManualValue;
+        setIsManualValue(nextIsManual);
+
+        // 自動モードに切り替えた瞬間、計算可能なら計算する
+        if (!nextIsManual && canAutoCalculateValue) {
             const calculated = fetchedPrice! * Number(shares);
             setCurrentValue(calculated.toString());
-        } else if (!isManualValue) {
-            setIsManualValue(true);
         }
     };
 
     // 取得額モード切替
     const handleToggleCostMode = () => {
-        if (isManualCost && canAutoCalculateCost) {
-            setIsManualCost(false);
+        const nextIsManual = !isManualCost;
+        setIsManualCost(nextIsManual);
+
+        // 自動モードに切り替えた瞬間、計算可能なら計算する
+        if (!nextIsManual && canAutoCalculateCost) {
             const calculated = Number(averageCost) * Number(shares);
             setTotalCost(calculated.toString());
-        } else if (!isManualCost) {
-            setIsManualCost(true);
         }
     };
 
@@ -234,7 +236,7 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
     };
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-overlay">
             <div className="modal-content" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <h3 className="modal-title">
@@ -316,8 +318,8 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
                                     type="button"
                                     className={`btn btn-mode-toggle ${isManualValue ? 'manual' : 'auto'}`}
                                     onClick={handleToggleValueMode}
-                                    disabled={isManualValue && !canAutoCalculateValue}
-                                    title={isManualValue ? (canAutoCalculateValue ? '自動計算に切替' : '価格取得と口数入力が必要') : '手動入力に切替'}
+                                    disabled={false}
+                                    title={isManualValue ? '自動計算（価格×口数）に切替' : '手動入力に切替'}
                                 >
                                     {isManualValue ? '手動' : '自動'}
                                 </button>
@@ -350,8 +352,8 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
                                     type="button"
                                     className={`btn btn-mode-toggle ${isManualCost ? 'manual' : 'auto'}`}
                                     onClick={handleToggleCostMode}
-                                    disabled={isManualCost && !canAutoCalculateCost}
-                                    title={isManualCost ? (canAutoCalculateCost ? '自動計算に切替' : '取得価格と口数入力が必要') : '手動入力に切替'}
+                                    disabled={false}
+                                    title={isManualCost ? '自動計算（平均取得価格×口数）に切替' : '手動入力に切替'}
                                 >
                                     {isManualCost ? '手動' : '自動'}
                                 </button>
