@@ -345,13 +345,20 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
                         {/* 銘柄名 */}
                         <div className="form-group">
                             <label className="form-label">銘柄名 *</label>
-                            <input
-                                type="text"
+                            <textarea
                                 className="form-input"
                                 placeholder="例：eMAXIS Slim 全世界株式"
                                 value={name}
                                 onChange={e => setName(e.target.value)}
                                 required
+                                rows={2}
+                                style={{
+                                    minHeight: '4.5rem',
+                                    resize: 'vertical',
+                                    lineHeight: '1.5',
+                                    paddingTop: '8px',
+                                    paddingBottom: '8px'
+                                }}
                             />
                         </div>
 
