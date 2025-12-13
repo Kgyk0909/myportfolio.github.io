@@ -16,9 +16,10 @@ interface HoldingFormProps {
     portfolioId: number;
     onClose: () => void;
     editHolding?: Holding;
+    onDelete?: (holding: Holding) => void;
 }
 
-export function HoldingForm({ portfolioId, onClose, editHolding }: HoldingFormProps) {
+export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: HoldingFormProps) {
     const { addHolding, updateHolding } = usePortfolioStore();
 
     const [name, setName] = useState(editHolding?.name ?? '');
@@ -207,20 +208,32 @@ export function HoldingForm({ portfolioId, onClose, editHolding }: HoldingFormPr
                         </div>
                     </div>
                     <div className="modal-footer">
-                        <button
-                            type="button"
-                            className="btn btn-secondary"
-                            onClick={onClose}
-                        >
-                            キャンセル
-                        </button>
-                        <button
-                            type="submit"
-                            className="btn btn-primary"
-                            disabled={!isValid || isSubmitting}
-                        >
-                            {isSubmitting ? '保存中...' : '保存'}
-                        </button>
+                        {editHolding && onDelete && (
+                            <button
+                                type="button"
+                                className="btn btn-danger-outline"
+                                onClick={() => onDelete(editHolding)}
+                            >
+                                <i className="fa-solid fa-trash"></i>
+                                <span>削除</span>
+                            </button>
+                        )}
+                        <div className="modal-footer-right">
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={onClose}
+                            >
+                                キャンセル
+                            </button>
+                            <button
+                                type="submit"
+                                className="btn btn-primary"
+                                disabled={!isValid || isSubmitting}
+                            >
+                                {isSubmitting ? '保存中...' : '保存'}
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>

@@ -49,6 +49,19 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
         try {
             const portfolios = await db.portfolios.toArray();
             set({ portfolios, isLoading: false });
+
+            // 最初のポートフォリオを自動選択してholdingsをロード
+            const firstPortfolio = portfolios[0];
+            if (firstPortfolio && firstPortfolio.id) {
+                const firstId = firstPortfolio.id;
+                set({ selectedPortfolioId: firstId });
+                // holdingsをロード
+                const holdings = await db.holdings
+                    .where('portfolioId')
+                    .equals(firstId)
+                    .toArray();
+                set({ holdings });
+            }
         } catch (error) {
             set({ error: String(error), isLoading: false });
         }

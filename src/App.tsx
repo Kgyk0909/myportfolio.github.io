@@ -1,17 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Dashboard } from './components/Dashboard';
-import { PortfolioList } from './components/PortfolioList';
+import { MainDashboard } from './components/MainDashboard';
+import { Sidebar } from './components/Sidebar';
 import { Settings } from './components/Settings';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { usePortfolioStore } from './stores/portfolioStore';
 import { fetchPrices } from './services/priceService';
 import './index.css';
 
-type Page = 'dashboard' | 'portfolios' | 'settings';
+type Page = 'main' | 'settings';
 
 function App() {
-    const [currentPage, setCurrentPage] = useState<Page>('dashboard');
-    const { loadPortfolios, holdings, updatePrices } = usePortfolioStore();
+    const [currentPage, setCurrentPage] = useState<Page>('main');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const { loadPortfolios, holdings, updatePrices, portfolios, selectedPortfolioId } = usePortfolioStore();
     const [isUpdating, setIsUpdating] = useState(false);
     const hasUpdatedRef = useRef(false);
 
@@ -49,16 +50,16 @@ function App() {
         }
     }, [holdings, handleUpdatePrices]);
 
+    const selectedPortfolio = portfolios.find(p => p.id === selectedPortfolioId);
+
     const renderPage = () => {
         switch (currentPage) {
-            case 'dashboard':
-                return <Dashboard />;
-            case 'portfolios':
-                return <PortfolioList />;
+            case 'main':
+                return <MainDashboard />;
             case 'settings':
                 return <Settings />;
             default:
-                return <Dashboard />;
+                return <MainDashboard />;
         }
     };
 
@@ -66,20 +67,18 @@ function App() {
         <div className="app">
             {/* ヘッダーナビゲーション */}
             <header className="app-header">
-                <nav className="header-nav">
+                <div className="header-left">
                     <button
-                        className={`nav-tab ${currentPage === 'dashboard' ? 'active' : ''}`}
-                        onClick={() => setCurrentPage('dashboard')}
+                        className="icon-btn"
+                        onClick={() => setIsSidebarOpen(true)}
+                        title="メニュー"
                     >
-                        ダッシュボード
+                        <i className="fa-solid fa-bars"></i>
                     </button>
-                    <button
-                        className={`nav-tab ${currentPage === 'portfolios' ? 'active' : ''}`}
-                        onClick={() => setCurrentPage('portfolios')}
-                    >
-                        ポートフォリオ
-                    </button>
-                </nav>
+                    {selectedPortfolio && currentPage === 'main' && (
+                        <span className="header-portfolio-name">{selectedPortfolio.name}</span>
+                    )}
+                </div>
                 <div className="header-actions">
                     <button
                         className="icon-btn"
@@ -90,18 +89,24 @@ function App() {
                         {isUpdating ? (
                             <span className="loading-spinner-small" />
                         ) : (
-                            '🔄'
+                            <i className="fa-solid fa-arrows-rotate"></i>
                         )}
                     </button>
                     <button
                         className={`icon-btn ${currentPage === 'settings' ? 'active' : ''}`}
-                        onClick={() => setCurrentPage('settings')}
+                        onClick={() => setCurrentPage(currentPage === 'settings' ? 'main' : 'settings')}
                         title="設定"
                     >
-                        ⚙️
+                        <i className="fa-solid fa-gear"></i>
                     </button>
                 </div>
             </header>
+
+            {/* サイドバー */}
+            <Sidebar
+                isOpen={isSidebarOpen}
+                onClose={() => setIsSidebarOpen(false)}
+            />
 
             <main className="app-container">
                 {renderPage()}
