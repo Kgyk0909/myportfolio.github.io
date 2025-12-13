@@ -111,17 +111,17 @@ export function Settings() {
     const [regionColors, setRegionColors] = useState<RegionColors>(DEFAULT_REGION_COLORS);
     const [cardConfigs, setCardConfigs] = useState<CardConfig[]>(DEFAULT_CARD_CONFIGS);
 
-    // センサー設定（長押し300msでドラッグ開始）
+    // センサー設定（長押し250msでドラッグ開始）
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                delay: 300,
+                delay: 250,
                 tolerance: 5,
             },
         }),
         useSensor(TouchSensor, {
             activationConstraint: {
-                delay: 300,
+                delay: 250,
                 tolerance: 5,
             },
         })

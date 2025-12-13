@@ -133,17 +133,17 @@ export function MainDashboard() {
         setCardConfigs(getCardConfigs());
     }, []);
 
-    // センサー設定（長押し500msでドラッグ開始）
+    // センサー設定（長押し250msでドラッグ開始）
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                delay: 500,
+                delay: 250,
                 tolerance: 5,
             },
         }),
         useSensor(TouchSensor, {
             activationConstraint: {
-                delay: 500,
+                delay: 250,
                 tolerance: 5,
             },
         })
