@@ -165,7 +165,7 @@ h4 {
 .summary-card {
   background: linear-gradient(135deg, var(--primary-800) 0%, var(--primary-900) 100%);
   color: var(--text-inverse);
-  padding: var(--spacing-xl);
+  padding: var(--spacing-md);
 }
 
 .summary-card .card-title {
@@ -482,18 +482,21 @@ h4 {
 
 .holding-stat-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
   font-size: 0.8125rem;
 }
 
 .stat-label {
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .stat-value {
   color: var(--text-primary);
   font-weight: 500;
   text-align: right;
+  min-width: 100px;
 }
 
 .holding-gain-badge {

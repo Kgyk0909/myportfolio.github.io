@@ -125,7 +125,9 @@ export function MainDashboard() {
                 <>
                     <div className="card">
                         <div className="card-header-collapsible">
-                            <h4 className="card-title">地域別分散状況</h4>
+                            <div className="card-header-left">
+                                <h4 className="card-title">地域別分散状況</h4>
+                            </div>
                             <button
                                 className="collapse-toggle"
                                 onClick={() => setAllocationCollapsed(!allocationCollapsed)}
@@ -142,7 +144,9 @@ export function MainDashboard() {
 
                     <div className="card">
                         <div className="card-header-collapsible">
-                            <h4 className="card-title">目標との比較</h4>
+                            <div className="card-header-left">
+                                <h4 className="card-title">目標との比較</h4>
+                            </div>
                             <button
                                 className="collapse-toggle"
                                 onClick={() => setComparisonCollapsed(!comparisonCollapsed)}
