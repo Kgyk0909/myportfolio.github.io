@@ -106,6 +106,11 @@ function App() {
             <Sidebar
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
+                onPortfolioSelect={() => {
+                    if (currentPage === 'settings') {
+                        setCurrentPage('main');
+                    }
+                }}
             />
 
             <main className="app-container">

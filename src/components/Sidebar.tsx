@@ -6,9 +6,10 @@ import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 interface SidebarProps {
     isOpen: boolean;
     onClose: () => void;
+    onPortfolioSelect?: () => void;
 }
 
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, onPortfolioSelect }: SidebarProps) {
     const {
         portfolios,
         selectedPortfolioId,
@@ -25,12 +26,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const handleSelectPortfolio = (id: number) => {
         selectPortfolio(id);
         onClose();
+        onPortfolioSelect?.();
     };
 
     const handleEditPortfolio = (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
         setEditPortfolioId(id);
         setShowPortfolioForm(true);
+        onClose(); // サイドバーを閉じる
     };
 
     const handleRequestDeletePortfolio = (e: React.MouseEvent, id: number, name: string) => {
