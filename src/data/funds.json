@@ -1,0 +1,86 @@
+[
+    {
+        "id": "03311187",
+        "name": "eMAXIS Slim全世界株式（オール・カントリー）",
+        "shortName": "オルカン",
+        "ticker": "03311187",
+        "category": "全世界株式"
+    },
+    {
+        "id": "03311186",
+        "name": "eMAXIS Slim米国株式（S&P500）",
+        "shortName": "S&P500",
+        "ticker": "03311186",
+        "category": "米国株式"
+    },
+    {
+        "id": "0331423A",
+        "name": "eMAXIS Slim先進国株式（含む日本）＜オール先進国＞",
+        "shortName": "オール先進国",
+        "ticker": "0331423A",
+        "category": "先進国株式"
+    },
+    {
+        "id": "03311169",
+        "name": "eMAXIS Slim先進国株式インデックス",
+        "shortName": "先進国（除く日本）",
+        "ticker": "03311169",
+        "category": "先進国株式"
+    },
+    {
+        "id": "03311149",
+        "name": "eMAXIS Slim国内株式（TOPIX）",
+        "shortName": "TOPIX",
+        "ticker": "03311149",
+        "category": "国内株式"
+    },
+    {
+        "id": "04311181",
+        "name": "iFreeNEXT FANG+インデックス",
+        "shortName": "FANG+",
+        "ticker": "04311181",
+        "category": "米国株式"
+    },
+    {
+        "id": "89311239",
+        "name": "SBI・V・先進国株式（除く米国）インデックス・ファンド",
+        "shortName": "先進国（除く米国）",
+        "ticker": "89311239",
+        "category": "先進国株式"
+    },
+    {
+        "id": "2931224A",
+        "name": "ニッセイ・S米国グロース株式メガ10ファンド",
+        "shortName": "米国メガ10",
+        "ticker": "2931224A",
+        "category": "米国株式"
+    },
+    {
+        "id": "0131B221",
+        "name": "Tracers S&P500ゴールドプラス",
+        "shortName": "S&P500ゴールド+",
+        "ticker": "0131B221",
+        "category": "バランス型"
+    },
+    {
+        "id": "0131C221",
+        "name": "Tracers NASDAQ100ゴールドプラス",
+        "shortName": "NASDAQ100ゴールド+",
+        "ticker": "0131C221",
+        "category": "バランス型"
+    },
+    {
+        "id": "8931125C",
+        "name": "SBI欧州高配当株式ファンド（年1回決算型）",
+        "shortName": "欧州高配当",
+        "ticker": "8931125C",
+        "category": "欧州株式"
+    },
+    {
+        "id": "64316168",
+        "name": "SMT日本株配当貴族インデックス・オープン",
+        "shortName": "日本株配当貴族",
+        "ticker": "64316168",
+        "category": "国内株式"
+    }
+]

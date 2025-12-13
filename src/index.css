@@ -1315,3 +1315,80 @@ h4 {
 .holdings-list .holding-item {
   touch-action: none;
 }
+
+/* === Fund Search === */
+.fund-search-input {
+  padding-left: 12px;
+}
+
+.fund-search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  margin-top: 4px;
+}
+
+.fund-search-item {
+  padding: var(--spacing-sm) var(--spacing-md);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color);
+  transition: background var(--transition-fast);
+}
+
+.fund-search-item:last-child {
+  border-bottom: none;
+}
+
+.fund-search-item:hover {
+  background: var(--primary-50);
+}
+
+.fund-search-item-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fund-search-item-meta {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: 2px;
+}
+
+.fund-search-item-short {
+  font-size: 0.75rem;
+  color: var(--accent-blue);
+  font-weight: 500;
+}
+
+.fund-search-item-category {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.fund-search-no-results {
+  padding: var(--spacing-md);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  margin-top: 4px;
+}
+
+/* Make search container relative for dropdown positioning */
+.form-group:has(.fund-search-input) {
+  position: relative;
+}

@@ -1,8 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePortfolioStore } from '../stores/portfolioStore';
 import { fetchPrice } from '../services/priceService';
 import { AllocationInput } from './AllocationInput';
 import type { Holding, AssetAllocation } from '../types';
+import fundsData from '../data/funds.json';
+
+// 投資信託データの型
+interface FundData {
+    id: string;
+    name: string;
+    shortName: string;
+    ticker: string;
+    category: string;
+}
+
+const funds: FundData[] = fundsData;
 
 const emptyAllocation: AssetAllocation = {
     us: 60,
@@ -35,6 +47,49 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
     const [isFetchingPrice, setIsFetchingPrice] = useState(false);
     const [fetchedPrice, setFetchedPrice] = useState<number | null>(editHolding?.currentPrice ?? null);
     const [priceError, setPriceError] = useState(false);
+
+    // 銘柄検索関連
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<FundData[]>([]);
+    const [showSearchResults, setShowSearchResults] = useState(false);
+    const searchRef = useRef<HTMLDivElement>(null);
+
+    // 検索クエリが変更されたら結果を更新
+    useEffect(() => {
+        if (searchQuery.trim() === '') {
+            setSearchResults([]);
+            return;
+        }
+
+        const query = searchQuery.toLowerCase();
+        const results = funds.filter(fund =>
+            fund.name.toLowerCase().includes(query) ||
+            fund.shortName.toLowerCase().includes(query) ||
+            fund.ticker.toLowerCase().includes(query) ||
+            fund.category.toLowerCase().includes(query)
+        );
+        setSearchResults(results);
+    }, [searchQuery]);
+
+    // 検索結果外クリックで閉じる
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+                setShowSearchResults(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // 銘柄選択時の処理
+    const handleSelectFund = (fund: FundData) => {
+        setName(fund.name);
+        setTicker(fund.ticker);
+        setSearchQuery('');
+        setShowSearchResults(false);
+    };
 
     const handleFetchPrice = async () => {
         if (!ticker.trim()) return;
@@ -106,6 +161,46 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
                 </div>
                 <form onSubmit={handleSubmit}>
                     <div className="modal-body">
+                        {/* 銘柄検索 */}
+                        <div className="form-group" ref={searchRef}>
+                            <label className="form-label">
+                                <i className="fa-solid fa-magnifying-glass"></i> 銘柄を検索
+                            </label>
+                            <input
+                                type="text"
+                                className="form-input fund-search-input"
+                                placeholder="銘柄名・略称・コードで検索..."
+                                value={searchQuery}
+                                onChange={e => {
+                                    setSearchQuery(e.target.value);
+                                    setShowSearchResults(true);
+                                }}
+                                onFocus={() => setShowSearchResults(true)}
+                            />
+                            {showSearchResults && searchResults.length > 0 && (
+                                <div className="fund-search-results">
+                                    {searchResults.map(fund => (
+                                        <div
+                                            key={fund.id}
+                                            className="fund-search-item"
+                                            onClick={() => handleSelectFund(fund)}
+                                        >
+                                            <div className="fund-search-item-name">{fund.name}</div>
+                                            <div className="fund-search-item-meta">
+                                                <span className="fund-search-item-short">{fund.shortName}</span>
+                                                <span className="fund-search-item-category">{fund.category}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {showSearchResults && searchQuery.trim() !== '' && searchResults.length === 0 && (
+                                <div className="fund-search-no-results">
+                                    該当する銘柄が見つかりません
+                                </div>
+                            )}
+                        </div>
+
                         <div className="form-group">
                             <label className="form-label">銘柄名（任意）</label>
                             <input
