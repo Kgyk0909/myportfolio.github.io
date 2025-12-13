@@ -142,7 +142,7 @@ function SortableHoldingItem({
                     right: 0,
                     width: '120px',
                     background: 'var(--accent-red)',
-                    display: 'flex',
+                    display: swipeOffset < 0 ? 'flex' : 'none', // スワイプ中のみ表示
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: 'white',
@@ -441,7 +441,7 @@ export function MainDashboard() {
                                         items={portfolioHoldings.map(h => h.id!)}
                                         strategy={verticalListSortingStrategy}
                                     >
-                                        <div className="holdings-list">
+                                        <div className="holdings-list" style={{ paddingBottom: '80px' }}>
                                             {portfolioHoldings.map(holding => (
                                                 <SortableHoldingItem
                                                     key={holding.id}

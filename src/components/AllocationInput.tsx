@@ -37,7 +37,7 @@ export function AllocationInput({ value, onChange }: AllocationInputProps) {
                         className="allocation-slider"
                         min="0"
                         max="100"
-                        step="1"
+                        step="0.1" // スライダーは0.1刻みくらいが使いやすい
                         value={allocation[key]}
                         onChange={e => handleChange(key, Number(e.target.value))}
                     />
@@ -46,7 +46,7 @@ export function AllocationInput({ value, onChange }: AllocationInputProps) {
                         className="allocation-value-input"
                         min="0"
                         max="100"
-                        step="1"
+                        step="0.01"
                         value={allocation[key]}
                         onChange={e => handleChange(key, Number(e.target.value))}
                     />
@@ -55,7 +55,7 @@ export function AllocationInput({ value, onChange }: AllocationInputProps) {
             ))}
             <div className={`allocation-total ${isValid ? 'valid' : 'invalid'}`}>
                 <span>合計</span>
-                <span>{total.toFixed(0)}% {isValid ? '✓' : '（100%にしてください）'}</span>
+                <span>{total.toFixed(2)}% {isValid ? '✓' : '（100%にしてください）'}</span>
             </div>
         </div>
     );
