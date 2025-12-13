@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePortfolioStore } from '../stores/portfolioStore';
 import { AllocationPieChart } from './AllocationPieChart';
 import { AllocationComparisonChart } from './AllocationComparisonChart';
@@ -39,10 +39,12 @@ function SortableHoldingItem({
     holding,
     formatCurrency,
     onEdit,
+    onDeleteRequest // 削除リクエスト用コールバックを追加
 }: {
     holding: Holding;
     formatCurrency: (value: number) => string;
     onEdit: (holding: Holding) => void;
+    onDeleteRequest: (holding: Holding) => void;
 }) {
     const {
         attributes,
@@ -57,7 +59,61 @@ function SortableHoldingItem({
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.5 : 1,
-        touchAction: 'none',
+        touchAction: 'pan-y', // 縦スクロールは許可、横はJSで制御
+        position: 'relative' as const,
+        overflow: 'hidden' // はみ出し非表示
+    };
+
+    // スワイプ削除ロジック
+    const [swipeOffset, setSwipeOffset] = useState(0);
+    const [isDeleteVisible, setIsDeleteVisible] = useState(false);
+    const touchStartX = useRef<number | null>(null);
+    const SWIPE_THRESHOLD = -80; // このピクセル以上左に行くと削除ボタン固定
+    const MAX_SWIPE = -120; // 最大スワイプ量
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (isDragging || !e.touches[0]) return;
+        touchStartX.current = e.touches[0].clientX;
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (isDragging || touchStartX.current === null || !e.touches[0]) return;
+        const currentX = e.touches[0].clientX;
+        const diff = currentX - touchStartX.current;
+
+        // 左スワイプのみ (または開いた状態からの右スワイプ)
+        // 既存のオフセット(開いていればSWIPE_THRESHOLD)を加味
+        let newOffset = (isDeleteVisible ? SWIPE_THRESHOLD : 0) + diff;
+
+        // 範囲制限
+        if (newOffset > 0) newOffset = 0; // 右に行き過ぎない
+        if (newOffset < MAX_SWIPE) newOffset = MAX_SWIPE; // 左に行き過ぎない
+
+        setSwipeOffset(newOffset);
+    };
+
+    const handleTouchEnd = () => {
+        if (isDragging || touchStartX.current === null) return;
+        touchStartX.current = null;
+
+        if (swipeOffset < SWIPE_THRESHOLD / 2) {
+            // 十分左にスワイプしたら開く
+            setSwipeOffset(SWIPE_THRESHOLD);
+            setIsDeleteVisible(true);
+        } else {
+            // 戻る
+            setSwipeOffset(0);
+            setIsDeleteVisible(false);
+        }
+    };
+
+    // コンテンツ部分がスライドするスタイル
+    const contentStyle = {
+        transform: `translateX(${swipeOffset}px)`,
+        transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+        backgroundColor: 'var(--bg-card)', // 背景色必須
+        position: 'relative' as const,
+        zIndex: 2,
     };
 
     // 評価額はcurrentValueを直接使用
@@ -75,47 +131,91 @@ function SortableHoldingItem({
         <div
             ref={setNodeRef}
             style={style}
-            className={`holding-item ${isDragging ? 'dragging' : ''}`}
-            {...attributes}
-            {...listeners}
-            onClick={(e) => {
-                // ドラッグ中でなければ編集モーダルを開く
-                if (!isDragging) {
-                    onEdit(holding);
-                }
-                e.stopPropagation();
-            }}
+            className={`holding-item-wrapper ${isDragging ? 'dragging' : ''}`}
         >
-            <div className="holding-left">
-                <div className="holding-name">{holding.name || holding.ticker}</div>
-                {holding.name && holding.ticker && <div className="holding-ticker">{holding.ticker}</div>}
+            {/* 削除ボタン領域 (背景) */}
+            <div
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    bottom: 0,
+                    right: 0,
+                    width: '120px',
+                    background: 'var(--accent-red)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    zIndex: 1,
+                    fontWeight: 'bold',
+                }}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (isDeleteVisible) {
+                        onDeleteRequest(holding);
+                        // 削除後に閉じる処理は親で行うか、ここで行う
+                        setSwipeOffset(0);
+                        setIsDeleteVisible(false);
+                    }
+                }}
+            >
+                <i className="fa-solid fa-trash"></i> 削除
             </div>
-            <div className="holding-right">
-                {/* 保有口数がある場合のみ表示 */}
-                {holding.shares && holding.shares > 0 && (
-                    <div className="holding-stat-row">
-                        <span className="stat-label">保有数：</span>
-                        <span className="stat-value">{holding.shares.toLocaleString()} 口</span>
-                    </div>
-                )}
-                {/* 取得額がある場合のみ表示 */}
-                {costValue !== null && costValue > 0 && (
-                    <div className="holding-stat-row">
-                        <span className="stat-label">取得額：</span>
-                        <span className="stat-value">{formatCurrency(costValue)}</span>
-                    </div>
-                )}
-                {/* 評価額は常に表示 */}
-                <div className="holding-stat-row">
-                    <span className="stat-label">評価額：</span>
-                    <span className="stat-value">{formatCurrency(currentValue)}</span>
+
+            {/* メインコンテンツ */}
+            <div
+                className="holding-item"
+                style={contentStyle}
+                {...attributes}
+                {...listeners}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onClick={(e) => {
+                    // スワイプで開いているときは閉じるだけ
+                    if (isDeleteVisible) {
+                        setSwipeOffset(0);
+                        setIsDeleteVisible(false);
+                        e.stopPropagation();
+                        return;
+                    }
+                    if (!isDragging) {
+                        onEdit(holding);
+                    }
+                    e.stopPropagation();
+                }}
+            >
+                <div className="holding-left">
+                    <div className="holding-name">{holding.name || holding.ticker}</div>
+                    {holding.name && holding.ticker && <div className="holding-ticker">{holding.ticker}</div>}
                 </div>
-                {/* 損益率は取得額がある場合のみ表示 */}
-                {gainPercent !== null && (
-                    <div className={`holding-gain-badge ${gainPercent >= 0 ? 'positive' : 'negative'}`}>
-                        {gainPercent >= 0 ? '+' : ''}{gainPercent.toFixed(1)}%
+                <div className="holding-right">
+                    {/* 保有口数がある場合のみ表示 */}
+                    {holding.shares && holding.shares > 0 && (
+                        <div className="holding-stat-row">
+                            <span className="stat-label">保有数：</span>
+                            <span className="stat-value">{holding.shares.toLocaleString()} 口</span>
+                        </div>
+                    )}
+                    {/* 取得額がある場合のみ表示 */}
+                    {costValue !== null && costValue > 0 && (
+                        <div className="holding-stat-row">
+                            <span className="stat-label">取得額：</span>
+                            <span className="stat-value">{formatCurrency(costValue)}</span>
+                        </div>
+                    )}
+                    {/* 評価額は常に表示 */}
+                    <div className="holding-stat-row">
+                        <span className="stat-label">評価額：</span>
+                        <span className="stat-value">{formatCurrency(currentValue)}</span>
                     </div>
-                )}
+                    {/* 損益率は取得額がある場合のみ表示 */}
+                    {gainPercent !== null && (
+                        <div className={`holding-gain-badge ${gainPercent >= 0 ? 'positive' : 'negative'}`}>
+                            {gainPercent >= 0 ? '+' : ''}{gainPercent.toFixed(1)}%
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -348,6 +448,7 @@ export function MainDashboard() {
                                                     holding={holding}
                                                     formatCurrency={formatCurrency}
                                                     onEdit={handleEditHolding}
+                                                    onDeleteRequest={(h) => setDeleteConfirm({ isOpen: true, holding: h })}
                                                 />
                                             ))}
                                         </div>

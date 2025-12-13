@@ -149,6 +149,30 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
         setTicker(fund.ticker);
         setSearchQuery('');
         setShowSearchResults(false);
+
+        // キーワードに基づいてテンプレートを自動選択
+        const lowerName = fund.name.toLowerCase();
+        let matchedTemplateId = '';
+
+        if (lowerName.includes('全世界')) {
+            matchedTemplateId = 'global-equity';
+        } else if (lowerName.includes('先進国')) {
+            matchedTemplateId = 'developed-equity';
+        } else if (lowerName.includes('米国') || lowerName.includes('s&p500') || lowerName.includes('全米') || lowerName.includes('nasdaq') || lowerName.includes('nyダウ') || lowerName.includes('vti') || lowerName.includes('voo')) {
+            matchedTemplateId = 'us-equity';
+        } else if (lowerName.includes('国内') || lowerName.includes('日本') || lowerName.includes('topix') || lowerName.includes('日経')) {
+            matchedTemplateId = 'japan-equity';
+        } else if (lowerName.includes('新興国')) {
+            matchedTemplateId = 'emerging-equity';
+        }
+
+        if (matchedTemplateId) {
+            setSelectedTemplateId(matchedTemplateId);
+            const template = templates.find(t => t.id === matchedTemplateId);
+            if (template) {
+                setAllocation({ ...template.allocation });
+            }
+        }
     };
 
     const handleFetchPrice = async () => {

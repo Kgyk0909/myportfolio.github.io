@@ -452,7 +452,7 @@ export function Settings() {
                     各地域のグラフ表示色をカスタマイズ
                 </p>
                 {/* グラフサイズと凡例制御 */}
-                <div style={{ height: '180px', marginBottom: '16px', transform: 'scale(0.9)', transformOrigin: 'center' }}>
+                <div style={{ height: '220px', marginBottom: '24px', transform: 'scale(0.85)', transformOrigin: 'center' }}>
                     <AllocationPieChart
                         showLegend={false}
                         allocation={{
