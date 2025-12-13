@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { usePortfolioStore } from '../stores/portfolioStore';
 import { PortfolioForm } from './PortfolioForm';
 import { HoldingForm } from './HoldingForm';
+import { SwipeableHoldingItem } from './SwipeableHoldingItem';
+import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import type { Holding } from '../types';
 
 export function PortfolioList() {
@@ -20,6 +22,9 @@ export function PortfolioList() {
     const [editPortfolioId, setEditPortfolioId] = useState<number | undefined>();
     const [showHoldingForm, setShowHoldingForm] = useState(false);
     const [editHolding, setEditHolding] = useState<Holding | undefined>();
+    const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; holding?: Holding }>({
+        isOpen: false
+    });
 
     useEffect(() => {
         loadPortfolios();
@@ -53,10 +58,19 @@ export function PortfolioList() {
         setShowHoldingForm(true);
     };
 
-    const handleDeleteHolding = async (id: number) => {
-        if (window.confirm('この銘柄を削除しますか？')) {
-            await deleteHolding(id);
+    const handleRequestDeleteHolding = (holding: Holding) => {
+        setDeleteConfirm({ isOpen: true, holding });
+    };
+
+    const handleConfirmDelete = async () => {
+        if (deleteConfirm.holding?.id) {
+            await deleteHolding(deleteConfirm.holding.id);
         }
+        setDeleteConfirm({ isOpen: false });
+    };
+
+    const handleCancelDelete = () => {
+        setDeleteConfirm({ isOpen: false });
     };
 
     return (
@@ -168,53 +182,15 @@ export function PortfolioList() {
                             </div>
                         ) : (
                             <div className="holdings-list">
-                                {portfolioHoldings.map(holding => {
-                                    const currentValue = (holding.currentPrice ?? 0) * holding.shares;
-                                    const costValue = (holding.averageCost ?? 0) * holding.shares;
-                                    const gainPercent = costValue > 0 ? ((currentValue - costValue) / costValue) * 100 : 0;
-
-                                    return (
-                                        <div
-                                            className="holding-item holding-item-detailed"
-                                            key={holding.id}
-                                            onClick={() => handleEditHolding(holding)}
-                                        >
-                                            <div className="holding-main">
-                                                <div className="holding-header">
-                                                    <div className="holding-name">{holding.name || holding.ticker}</div>
-                                                    {holding.name && <div className="holding-ticker">{holding.ticker}</div>}
-                                                </div>
-                                                <div className="holding-stats">
-                                                    <div className="holding-stat-row">
-                                                        <span className="stat-label">保有数：</span>
-                                                        <span className="stat-value">{holding.shares.toLocaleString()}口</span>
-                                                    </div>
-                                                    <div className="holding-stat-row">
-                                                        <span className="stat-label">取得額：</span>
-                                                        <span className="stat-value">{formatCurrency(costValue)}</span>
-                                                    </div>
-                                                    <div className="holding-stat-row">
-                                                        <span className="stat-label">評価額：</span>
-                                                        <span className="stat-value">{formatCurrency(currentValue)}</span>
-                                                    </div>
-                                                    <div className={`holding-gain-badge ${gainPercent >= 0 ? 'positive' : 'negative'}`}>
-                                                        {gainPercent >= 0 ? '+' : ''}{gainPercent.toFixed(1)}%
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <button
-                                                className="btn btn-danger btn-icon"
-                                                style={{ marginLeft: '8px', flexShrink: 0 }}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (holding.id) handleDeleteHolding(holding.id);
-                                                }}
-                                            >
-                                                🗑
-                                            </button>
-                                        </div>
-                                    );
-                                })}
+                                {portfolioHoldings.map(holding => (
+                                    <SwipeableHoldingItem
+                                        key={holding.id}
+                                        holding={holding}
+                                        onEdit={() => handleEditHolding(holding)}
+                                        onDelete={() => handleRequestDeleteHolding(holding)}
+                                        formatCurrency={formatCurrency}
+                                    />
+                                ))}
                             </div>
                         )}
                     </div>
@@ -249,6 +225,14 @@ export function PortfolioList() {
                     editHolding={editHolding}
                 />
             )}
+
+            {/* 削除確認ダイアログ */}
+            <DeleteConfirmDialog
+                isOpen={deleteConfirm.isOpen}
+                itemName={deleteConfirm.holding?.name || deleteConfirm.holding?.ticker || ''}
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+            />
         </div>
     );
 }

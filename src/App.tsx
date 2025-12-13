@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { PortfolioList } from './components/PortfolioList';
 import { Settings } from './components/Settings';
@@ -13,6 +13,7 @@ function App() {
     const [currentPage, setCurrentPage] = useState<Page>('dashboard');
     const { loadPortfolios, holdings, updatePrices } = usePortfolioStore();
     const [isUpdating, setIsUpdating] = useState(false);
+    const hasUpdatedRef = useRef(false);
 
     useEffect(() => {
         loadPortfolios();
@@ -40,13 +41,13 @@ function App() {
         }
     }, [holdings, updatePrices, isUpdating]);
 
-    // ページロード時に価格を自動更新
+    // ページロード時に価格を自動更新（初回のみ）
     useEffect(() => {
-        if (holdings.length > 0) {
+        if (holdings.length > 0 && !hasUpdatedRef.current) {
+            hasUpdatedRef.current = true;
             handleUpdatePrices();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [holdings.length]);
+    }, [holdings, handleUpdatePrices]);
 
     const renderPage = () => {
         switch (currentPage) {

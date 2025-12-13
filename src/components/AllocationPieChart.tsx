@@ -5,10 +5,11 @@ import {
     Tooltip,
     Legend
 } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import type { AssetAllocation } from '../types';
 import { REGION_LABELS, REGION_COLORS } from '../types';
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 
 interface AllocationPieChartProps {
     allocation: AssetAllocation;
@@ -44,6 +45,20 @@ export function AllocationPieChart({ allocation, title }: AllocationPieChartProp
                         return `${context.label}: ${(context.raw as number).toFixed(1)}%`;
                     }
                 }
+            },
+            datalabels: {
+                color: '#fff',
+                font: {
+                    weight: 'bold' as const,
+                    size: 12
+                },
+                formatter: (value: number) => {
+                    // 5%未満は表示しない（重なり防止）
+                    if (value < 5) return '';
+                    return `${value.toFixed(0)}%`;
+                },
+                textShadowBlur: 4,
+                textShadowColor: 'rgba(0,0,0,0.5)'
             }
         }
     };
