@@ -12,12 +12,14 @@ export interface Holding {
     id?: number;
     portfolioId: number;
     sortOrder?: number;              // 並び順
-    name: string;                    // 銘柄名（自由入力）
-    ticker: string;                  // ティッカーシンボル（必須）
-    shares: number;                  // 保有口数（必須）
+    name: string;                    // 銘柄名（必須）
+    ticker?: string;                 // ティッカーシンボル（任意）
+    shares?: number;                 // 保有口数（任意）
     averageCost?: number;            // 平均取得価格（任意）
     allocation: AssetAllocation;     // アセットクラス比率（必須）
-    currentPrice?: number;           // 現在の価格
+    currentPrice?: number;           // 現在の価格（API取得）
+    currentValue: number;            // 評価額（必須）
+    isManualValue?: boolean;         // 手動入力フラグ
     lastUpdated?: Date;              // 最終更新日時
 }
 

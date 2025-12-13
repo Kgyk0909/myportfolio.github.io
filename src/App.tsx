@@ -22,17 +22,29 @@ function App() {
 
     // 価格更新処理
     const handleUpdatePrices = useCallback(async () => {
-        if (holdings.length === 0 || isUpdating) return;
+        // tickerがある銘柄のみ対象
+        const holdingsWithTicker = holdings.filter(h => h.ticker && h.ticker.trim() !== '');
+        if (holdingsWithTicker.length === 0 || isUpdating) return;
 
         setIsUpdating(true);
         try {
-            const tickers = holdings.map(h => h.ticker);
+            const tickers = holdingsWithTicker.map(h => h.ticker!);
             const prices = await fetchPrices(tickers);
 
-            const updatedHoldings = holdings.map(h => ({
-                ...h,
-                currentPrice: prices.get(h.ticker)?.price ?? h.currentPrice
-            }));
+            const updatedHoldings = holdings.map(h => {
+                if (h.ticker && prices.has(h.ticker)) {
+                    const newPrice = prices.get(h.ticker)?.price ?? h.currentPrice;
+                    return {
+                        ...h,
+                        currentPrice: newPrice,
+                        // 自動計算モードの場合は評価額も更新
+                        currentValue: (!h.isManualValue && newPrice && h.shares)
+                            ? newPrice * h.shares
+                            : h.currentValue
+                    };
+                }
+                return h;
+            });
 
             await updatePrices(updatedHoldings);
         } catch (error) {

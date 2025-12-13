@@ -60,9 +60,16 @@ function SortableHoldingItem({
         touchAction: 'none',
     };
 
-    const currentValue = (holding.currentPrice ?? 0) * holding.shares;
-    const costValue = (holding.averageCost ?? 0) * holding.shares;
-    const gainPercent = costValue > 0 ? ((currentValue - costValue) / costValue) * 100 : 0;
+    // 評価額はcurrentValueを直接使用
+    const currentValue = holding.currentValue;
+    // 取得額は口数と取得価格がある場合のみ計算
+    const costValue = (holding.shares && holding.averageCost)
+        ? holding.averageCost * holding.shares
+        : null;
+    // 損益率は取得額がある場合のみ計算
+    const gainPercent = costValue && costValue > 0
+        ? ((currentValue - costValue) / costValue) * 100
+        : null;
 
     return (
         <div
@@ -81,24 +88,34 @@ function SortableHoldingItem({
         >
             <div className="holding-left">
                 <div className="holding-name">{holding.name || holding.ticker}</div>
-                {holding.name && <div className="holding-ticker">{holding.ticker}</div>}
+                {holding.name && holding.ticker && <div className="holding-ticker">{holding.ticker}</div>}
             </div>
             <div className="holding-right">
-                <div className="holding-stat-row">
-                    <span className="stat-label">保有数：</span>
-                    <span className="stat-value">{holding.shares.toLocaleString()} 口</span>
-                </div>
-                <div className="holding-stat-row">
-                    <span className="stat-label">取得額：</span>
-                    <span className="stat-value">{formatCurrency(costValue)}</span>
-                </div>
+                {/* 保有口数がある場合のみ表示 */}
+                {holding.shares && holding.shares > 0 && (
+                    <div className="holding-stat-row">
+                        <span className="stat-label">保有数：</span>
+                        <span className="stat-value">{holding.shares.toLocaleString()} 口</span>
+                    </div>
+                )}
+                {/* 取得額がある場合のみ表示 */}
+                {costValue !== null && costValue > 0 && (
+                    <div className="holding-stat-row">
+                        <span className="stat-label">取得額：</span>
+                        <span className="stat-value">{formatCurrency(costValue)}</span>
+                    </div>
+                )}
+                {/* 評価額は常に表示 */}
                 <div className="holding-stat-row">
                     <span className="stat-label">評価額：</span>
                     <span className="stat-value">{formatCurrency(currentValue)}</span>
                 </div>
-                <div className={`holding-gain-badge ${gainPercent >= 0 ? 'positive' : 'negative'}`}>
-                    {gainPercent >= 0 ? '+' : ''}{gainPercent.toFixed(1)}%
-                </div>
+                {/* 損益率は取得額がある場合のみ表示 */}
+                {gainPercent !== null && (
+                    <div className={`holding-gain-badge ${gainPercent >= 0 ? 'positive' : 'negative'}`}>
+                        {gainPercent >= 0 ? '+' : ''}{gainPercent.toFixed(1)}%
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -197,6 +214,11 @@ export function MainDashboard() {
 
     // カード表示関数
     const renderCard = (cardId: CardId) => {
+        // 全銘柄に取得額があるかチェック
+        const allHaveCost = portfolioHoldings.length > 0 && portfolioHoldings.every(h =>
+            h.shares && h.averageCost && h.shares > 0 && h.averageCost > 0
+        );
+
         switch (cardId) {
             case 'summary':
                 if (!summary) return null;
@@ -216,7 +238,8 @@ export function MainDashboard() {
                         {!summaryCollapsed && (
                             <>
                                 <div className="summary-value">{formatCurrency(summary.totalValue)}</div>
-                                {summary.totalCost > 0 && (
+                                {/* 全銘柄に取得額がある場合のみ損益を表示 */}
+                                {allHaveCost && summary.totalCost > 0 && (
                                     <div className={`summary-change ${summary.totalGain >= 0 ? 'positive' : 'negative'}`}>
                                         {summary.totalGain >= 0 ? (
                                             <i className="fa-solid fa-caret-up"></i>

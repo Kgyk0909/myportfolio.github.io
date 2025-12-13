@@ -1392,3 +1392,40 @@ h4 {
 .form-group:has(.fund-search-input) {
   position: relative;
 }
+
+/* === Value Input Mode Toggle === */
+.value-input-row {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: stretch;
+}
+
+.value-input-row .form-input {
+  flex: 1;
+}
+
+.btn-mode-toggle {
+  min-width: 60px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: var(--border-radius);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-mode-toggle.manual {
+  background: var(--primary-200);
+  color: var(--text-primary);
+}
+
+.btn-mode-toggle.auto {
+  background: var(--accent-blue);
+  color: white;
+}
+
+.btn-mode-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
