@@ -52,22 +52,47 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
     const [currentValue, setCurrentValue] = useState(editHolding?.currentValue?.toString() ?? '');
     const [isManualValue, setIsManualValue] = useState(editHolding?.isManualValue ?? true);
 
+    // 取得額関連
+    const [totalCost, setTotalCost] = useState(editHolding?.totalCost?.toString() ?? '');
+    const [isManualCost, setIsManualCost] = useState(editHolding?.isManualCost ?? true);
+
     // 銘柄検索関連
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<FundData[]>([]);
     const [showSearchResults, setShowSearchResults] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
 
-    // 自動計算可能かどうか
-    const canAutoCalculate = fetchedPrice !== null && shares !== '' && Number(shares) > 0;
+    // 評価額の自動計算可能かどうか (価格 × 口数)
+    const canAutoCalculateValue = fetchedPrice !== null && shares !== '' && Number(shares) > 0;
 
-    // 価格が取得され、口数がある場合は自動計算
+    // 取得額の自動計算可能かどうか (取得価格 × 口数)
+    const canAutoCalculateCost = averageCost !== '' && Number(averageCost) > 0 && shares !== '' && Number(shares) > 0;
+
+    // 表示条件
+    // ティッカー: 自動計算モードで非表示、手動モードで表示、入力済みなら常時表示
+    const showTicker = isManualValue || ticker.trim() !== '';
+
+    // 平均取得価格: 取得額自動計算モードで表示、手動で非表示、入力済みなら常時表示
+    const showAverageCost = !isManualCost || averageCost !== '';
+
+    // 保有口数: いずれかの自動計算モードで表示、両方手動で非表示、入力済みなら常時表示
+    const showShares = !isManualValue || !isManualCost || shares !== '';
+
+    // 価格が取得され、口数がある場合は評価額を自動計算
     useEffect(() => {
-        if (!isManualValue && canAutoCalculate) {
+        if (!isManualValue && canAutoCalculateValue) {
             const calculated = fetchedPrice! * Number(shares);
             setCurrentValue(calculated.toString());
         }
-    }, [fetchedPrice, shares, isManualValue, canAutoCalculate]);
+    }, [fetchedPrice, shares, isManualValue, canAutoCalculateValue]);
+
+    // 取得価格と口数がある場合は取得額を自動計算
+    useEffect(() => {
+        if (!isManualCost && canAutoCalculateCost) {
+            const calculated = Number(averageCost) * Number(shares);
+            setTotalCost(calculated.toString());
+        }
+    }, [averageCost, shares, isManualCost, canAutoCalculateCost]);
 
     // 検索クエリが変更されたら結果を更新
     useEffect(() => {
@@ -117,7 +142,6 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
             const priceData = await fetchPrice(ticker.trim().toUpperCase());
             if (priceData) {
                 setFetchedPrice(priceData.price);
-                // 価格取得成功で自動計算モードに切り替え可能になる
             } else {
                 setPriceError(true);
             }
@@ -128,16 +152,25 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
         }
     };
 
-    // モード切替
-    const handleToggleMode = () => {
-        if (isManualValue && canAutoCalculate) {
-            // 手動→自動
+    // 評価額モード切替
+    const handleToggleValueMode = () => {
+        if (isManualValue && canAutoCalculateValue) {
             setIsManualValue(false);
             const calculated = fetchedPrice! * Number(shares);
             setCurrentValue(calculated.toString());
         } else if (!isManualValue) {
-            // 自動→手動
             setIsManualValue(true);
+        }
+    };
+
+    // 取得額モード切替
+    const handleToggleCostMode = () => {
+        if (isManualCost && canAutoCalculateCost) {
+            setIsManualCost(false);
+            const calculated = Number(averageCost) * Number(shares);
+            setTotalCost(calculated.toString());
+        } else if (!isManualCost) {
+            setIsManualCost(true);
         }
     };
 
@@ -163,6 +196,8 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
                 currentPrice: fetchedPrice ?? editHolding?.currentPrice,
                 currentValue: Number(currentValue),
                 isManualValue,
+                totalCost: totalCost ? Number(totalCost) : undefined,
+                isManualCost,
             };
 
             if (editHolding?.id) {
@@ -181,6 +216,23 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
     const total = Object.values(allocation).reduce((a, b) => a + b, 0);
     const isValid = Math.abs(total - 100) < 0.01 && name.trim() && currentValue;
 
+    // 自動計算モードで必要情報が不足している場合のメッセージ
+    const getValueAutoMessage = () => {
+        if (!isManualValue) {
+            if (!fetchedPrice) return '※ティッカーから価格を取得してください';
+            if (!shares || Number(shares) <= 0) return '※保有口数を入力してください';
+        }
+        return null;
+    };
+
+    const getCostAutoMessage = () => {
+        if (!isManualCost) {
+            if (!averageCost || Number(averageCost) <= 0) return '※平均取得価格を入力してください';
+            if (!shares || Number(shares) <= 0) return '※保有口数を入力してください';
+        }
+        return null;
+    };
+
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content" onClick={e => e.stopPropagation()}>
@@ -192,7 +244,7 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
                 </div>
                 <form onSubmit={handleSubmit}>
                     <div className="modal-body">
-                        {/* 銘柄検索 */}
+                        {/* 銘柄を検索 */}
                         <div className="form-group" ref={searchRef}>
                             <label className="form-label">
                                 <i className="fa-solid fa-magnifying-glass"></i> 銘柄を検索
@@ -232,6 +284,7 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
                             )}
                         </div>
 
+                        {/* 銘柄名 */}
                         <div className="form-group">
                             <label className="form-label">銘柄名 *</label>
                             <input
@@ -242,63 +295,6 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
                                 onChange={e => setName(e.target.value)}
                                 required
                             />
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label">ティッカーシンボル（任意）</label>
-                            <input
-                                type="text"
-                                className="form-input"
-                                placeholder="例：VT, ^N225, 4689.T"
-                                value={ticker}
-                                onChange={e => setTicker(e.target.value)}
-                            />
-                            <p className="form-hint">yfinanceで取得可能なコードを入力（ETF・個別株向け）</p>
-
-                            {ticker.trim() && (
-                                <>
-                                    {/* 価格取得ボタン */}
-                                    <button
-                                        type="button"
-                                        className="btn btn-secondary"
-                                        style={{ marginTop: '8px' }}
-                                        onClick={handleFetchPrice}
-                                        disabled={!ticker.trim() || isFetchingPrice}
-                                    >
-                                        {isFetchingPrice ? '取得中...' : '🔍 価格を取得'}
-                                    </button>
-
-                                    {/* 取得した価格表示 */}
-                                    {fetchedPrice !== null && (
-                                        <div className="fetched-price-display" style={{
-                                            marginTop: '8px',
-                                            padding: '8px 12px',
-                                            background: 'rgba(34, 197, 94, 0.1)',
-                                            borderRadius: '8px',
-                                            color: 'var(--accent-green)',
-                                            fontSize: '0.875rem',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '8px'
-                                        }}>
-                                            <span>✓</span>
-                                            <span>現在価格: ¥{fetchedPrice.toLocaleString()}</span>
-                                        </div>
-                                    )}
-                                    {priceError && (
-                                        <div className="price-error-display" style={{
-                                            marginTop: '8px',
-                                            padding: '8px 12px',
-                                            background: 'rgba(239, 68, 68, 0.1)',
-                                            borderRadius: '8px',
-                                            color: 'var(--accent-red)',
-                                            fontSize: '0.875rem'
-                                        }}>
-                                            ⚠ 価格を取得できませんでした
-                                        </div>
-                                    )}
-                                </>
-                            )}
                         </div>
 
                         {/* 評価額 */}
@@ -319,46 +315,148 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
                                 <button
                                     type="button"
                                     className={`btn btn-mode-toggle ${isManualValue ? 'manual' : 'auto'}`}
-                                    onClick={handleToggleMode}
-                                    disabled={isManualValue && !canAutoCalculate}
-                                    title={isManualValue ? (canAutoCalculate ? '自動計算に切替' : '価格取得と口数入力が必要') : '手動入力に切替'}
+                                    onClick={handleToggleValueMode}
+                                    disabled={isManualValue && !canAutoCalculateValue}
+                                    title={isManualValue ? (canAutoCalculateValue ? '自動計算に切替' : '価格取得と口数入力が必要') : '手動入力に切替'}
                                 >
                                     {isManualValue ? '手動' : '自動'}
                                 </button>
                             </div>
-                            <p className="form-hint">
-                                {isManualValue
-                                    ? '手動入力モード: 評価額を直接入力してください'
-                                    : '自動計算モード: 現在価格 × 保有口数'}
-                            </p>
+                            {getValueAutoMessage() && (
+                                <p className="form-hint form-hint-warning">{getValueAutoMessage()}</p>
+                            )}
+                            {!getValueAutoMessage() && (
+                                <p className="form-hint">
+                                    {isManualValue ? '評価額を直接入力' : '現在価格 × 保有口数'}
+                                </p>
+                            )}
                         </div>
 
+                        {/* 取得額 */}
                         <div className="form-group">
-                            <label className="form-label">保有口数（任意）</label>
-                            <input
-                                type="number"
-                                className="form-input"
-                                placeholder="100"
-                                value={shares}
-                                onChange={e => setShares(e.target.value)}
-                                min="0"
-                                step="0.01"
-                            />
+                            <label className="form-label">取得額（任意）</label>
+                            <div className="value-input-row">
+                                <input
+                                    type="number"
+                                    className="form-input"
+                                    placeholder="800000"
+                                    value={totalCost}
+                                    onChange={e => setTotalCost(e.target.value)}
+                                    min="0"
+                                    step="1"
+                                    disabled={!isManualCost}
+                                />
+                                <button
+                                    type="button"
+                                    className={`btn btn-mode-toggle ${isManualCost ? 'manual' : 'auto'}`}
+                                    onClick={handleToggleCostMode}
+                                    disabled={isManualCost && !canAutoCalculateCost}
+                                    title={isManualCost ? (canAutoCalculateCost ? '自動計算に切替' : '取得価格と口数入力が必要') : '手動入力に切替'}
+                                >
+                                    {isManualCost ? '手動' : '自動'}
+                                </button>
+                            </div>
+                            {getCostAutoMessage() && (
+                                <p className="form-hint form-hint-warning">{getCostAutoMessage()}</p>
+                            )}
+                            {!getCostAutoMessage() && (
+                                <p className="form-hint">
+                                    {isManualCost ? '取得額を直接入力' : '平均取得価格 × 保有口数'}
+                                </p>
+                            )}
                         </div>
 
-                        <div className="form-group">
-                            <label className="form-label">平均取得価格（任意）</label>
-                            <input
-                                type="number"
-                                className="form-input"
-                                placeholder="15000"
-                                value={averageCost}
-                                onChange={e => setAverageCost(e.target.value)}
-                                min="0"
-                                step="0.01"
-                            />
-                        </div>
+                        {/* ティッカーシンボル（条件付き表示） */}
+                        {showTicker && (
+                            <div className="form-group">
+                                <label className="form-label">ティッカーシンボル（任意）</label>
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="例：VT, ^N225, 4689.T"
+                                    value={ticker}
+                                    onChange={e => setTicker(e.target.value)}
+                                />
+                                <p className="form-hint">yfinanceで取得可能なコード（ETF・個別株向け）</p>
 
+                                {ticker.trim() && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            className="btn btn-secondary"
+                                            style={{ marginTop: '8px' }}
+                                            onClick={handleFetchPrice}
+                                            disabled={!ticker.trim() || isFetchingPrice}
+                                        >
+                                            {isFetchingPrice ? '取得中...' : '🔍 価格を取得'}
+                                        </button>
+
+                                        {fetchedPrice !== null && (
+                                            <div className="fetched-price-display" style={{
+                                                marginTop: '8px',
+                                                padding: '8px 12px',
+                                                background: 'rgba(34, 197, 94, 0.1)',
+                                                borderRadius: '8px',
+                                                color: 'var(--accent-green)',
+                                                fontSize: '0.875rem',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px'
+                                            }}>
+                                                <span>✓</span>
+                                                <span>現在価格: ¥{fetchedPrice.toLocaleString()}</span>
+                                            </div>
+                                        )}
+                                        {priceError && (
+                                            <div className="price-error-display" style={{
+                                                marginTop: '8px',
+                                                padding: '8px 12px',
+                                                background: 'rgba(239, 68, 68, 0.1)',
+                                                borderRadius: '8px',
+                                                color: 'var(--accent-red)',
+                                                fontSize: '0.875rem'
+                                            }}>
+                                                ⚠ 価格を取得できませんでした
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                        {/* 保有口数（条件付き表示） */}
+                        {showShares && (
+                            <div className="form-group">
+                                <label className="form-label">保有口数（任意）</label>
+                                <input
+                                    type="number"
+                                    className="form-input"
+                                    placeholder="100"
+                                    value={shares}
+                                    onChange={e => setShares(e.target.value)}
+                                    min="0"
+                                    step="0.01"
+                                />
+                            </div>
+                        )}
+
+                        {/* 平均取得価格（条件付き表示） */}
+                        {showAverageCost && (
+                            <div className="form-group">
+                                <label className="form-label">平均取得価格（任意）</label>
+                                <input
+                                    type="number"
+                                    className="form-input"
+                                    placeholder="15000"
+                                    value={averageCost}
+                                    onChange={e => setAverageCost(e.target.value)}
+                                    min="0"
+                                    step="0.01"
+                                />
+                            </div>
+                        )}
+
+                        {/* アセットクラス比率 */}
                         <div className="form-group">
                             <label className="form-label">アセットクラス比率 *</label>
                             <AllocationInput

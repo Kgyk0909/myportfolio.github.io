@@ -19,7 +19,9 @@ export interface Holding {
     allocation: AssetAllocation;     // アセットクラス比率（必須）
     currentPrice?: number;           // 現在の価格（API取得）
     currentValue: number;            // 評価額（必須）
-    isManualValue?: boolean;         // 手動入力フラグ
+    isManualValue?: boolean;         // 評価額手動入力フラグ
+    totalCost?: number;              // 取得額（任意）
+    isManualCost?: boolean;          // 取得額手動入力フラグ
     lastUpdated?: Date;              // 最終更新日時
 }
 

@@ -1429,3 +1429,9 @@ h4 {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* === Form Hint Warning === */
+.form-hint-warning {
+  color: var(--accent-orange, #f59e0b);
+  font-weight: 500;
+}

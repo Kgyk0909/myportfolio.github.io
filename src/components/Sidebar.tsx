@@ -56,6 +56,7 @@ export function Sidebar({ isOpen, onClose, onPortfolioSelect }: SidebarProps) {
     const handleAddPortfolio = () => {
         setEditPortfolioId(undefined);
         setShowPortfolioForm(true);
+        onClose(); // サイドバーを閉じる
     };
 
     return (
@@ -124,6 +125,10 @@ export function Sidebar({ isOpen, onClose, onPortfolioSelect }: SidebarProps) {
                 <PortfolioForm
                     onClose={() => setShowPortfolioForm(false)}
                     editId={editPortfolioId}
+                    onCreated={(portfolioId) => {
+                        selectPortfolio(portfolioId);
+                        onPortfolioSelect?.();
+                    }}
                 />
             )}
 

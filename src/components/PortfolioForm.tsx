@@ -14,9 +14,10 @@ const emptyAllocation: AssetAllocation = {
 interface PortfolioFormProps {
     onClose: () => void;
     editId?: number;
+    onCreated?: (portfolioId: number) => void;
 }
 
-export function PortfolioForm({ onClose, editId }: PortfolioFormProps) {
+export function PortfolioForm({ onClose, editId, onCreated }: PortfolioFormProps) {
     const { portfolios, createPortfolio, updatePortfolio } = usePortfolioStore();
 
     const existing = editId ? portfolios.find(p => p.id === editId) : null;
@@ -36,7 +37,10 @@ export function PortfolioForm({ onClose, editId }: PortfolioFormProps) {
             if (editId) {
                 await updatePortfolio(editId, { name: name.trim(), targetAllocation });
             } else {
-                await createPortfolio(name.trim(), targetAllocation);
+                const newPortfolio = await createPortfolio(name.trim(), targetAllocation);
+                if (newPortfolio.id && onCreated) {
+                    onCreated(newPortfolio.id);
+                }
             }
             onClose();
         } catch (error) {
