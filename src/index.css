@@ -462,6 +462,13 @@ h4 {
 }
 
 /* === Holding Item Detailed === */
+.holding-left {
+  flex: 1;
+  min-width: 0;
+  /* Enable text truncation */
+  margin-right: var(--spacing-md);
+}
+
 .holding-item-detailed {
   flex-direction: row;
   align-items: flex-start;
@@ -497,7 +504,7 @@ h4 {
   color: var(--text-primary);
   font-weight: 500;
   text-align: right;
-  min-width: 100px;
+  /* min-width: 100px;  Removed to prevent whitespace on small values */
 }
 
 .holding-gain-badge {
@@ -1435,6 +1442,7 @@ h4 {
   color: var(--accent-orange, #f59e0b);
   font-weight: 500;
 }
+
 .header-portfolio-name.clickable {
   cursor: pointer;
   transition: color var(--transition-fast);
@@ -1462,4 +1470,3 @@ h4 {
 .header-portfolio-name-input:focus {
   outline: none;
 }
-
