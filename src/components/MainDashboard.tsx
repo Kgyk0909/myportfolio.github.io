@@ -62,10 +62,10 @@ function SortableHoldingItem({
 
     // 評価額はcurrentValueを直接使用
     const currentValue = holding.currentValue;
-    // 取得額は口数と取得価格がある場合のみ計算
-    const costValue = (holding.shares && holding.averageCost)
+    // 取得額は手入力(totalCost)がある場合はそれを優先、なければ口数と平均取得価格から計算
+    const costValue = holding.totalCost ?? ((holding.shares && holding.averageCost)
         ? holding.averageCost * holding.shares
-        : null;
+        : null);
     // 損益率は取得額がある場合のみ計算
     const gainPercent = costValue && costValue > 0
         ? ((currentValue - costValue) / costValue) * 100

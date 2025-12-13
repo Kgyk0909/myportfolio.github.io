@@ -16,6 +16,23 @@ interface FundData {
 
 const funds: FundData[] = fundsData;
 
+// 数値をカンマ区切り文字列に変換（小数は維持）
+const formatNumber = (val: string | number | undefined | null): string => {
+    if (val === undefined || val === null || val === '') return '';
+    const strVal = val.toString();
+    const parts = strVal.split('.');
+    // 整数部はカンマを除去してから再フォーマット
+    if (parts[0]) {
+        parts[0] = parts[0].replace(/,/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+    return parts.join('.');
+};
+
+// カンマを除去して数値文字列に戻す
+const parseNumber = (val: string): string => {
+    return val.replace(/,/g, '');
+};
+
 const emptyAllocation: AssetAllocation = {
     us: 60,
     japan: 0,
@@ -37,7 +54,7 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
     const [name, setName] = useState(editHolding?.name ?? '');
     const [ticker, setTicker] = useState(editHolding?.ticker ?? '');
     const [shares, setShares] = useState(editHolding?.shares?.toString() ?? '');
-    const [averageCost, setAverageCost] = useState(editHolding?.averageCost?.toString() ?? '');
+    const [averageCost, setAverageCost] = useState(formatNumber(editHolding?.averageCost));
     const [allocation, setAllocation] = useState<AssetAllocation>(
         editHolding?.allocation ?? emptyAllocation
     );
@@ -49,11 +66,11 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
     const [priceError, setPriceError] = useState(false);
 
     // 評価額関連
-    const [currentValue, setCurrentValue] = useState(editHolding?.currentValue?.toString() ?? '');
+    const [currentValue, setCurrentValue] = useState(formatNumber(editHolding?.currentValue));
     const [isManualValue, setIsManualValue] = useState(editHolding?.isManualValue ?? true);
 
     // 取得額関連
-    const [totalCost, setTotalCost] = useState(editHolding?.totalCost?.toString() ?? '');
+    const [totalCost, setTotalCost] = useState(formatNumber(editHolding?.totalCost));
     const [isManualCost, setIsManualCost] = useState(editHolding?.isManualCost ?? true);
 
     // 銘柄検索関連
@@ -66,7 +83,7 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
     const canAutoCalculateValue = fetchedPrice !== null && shares !== '' && Number(shares) > 0;
 
     // 取得額の自動計算可能かどうか (取得価格 × 口数)
-    const canAutoCalculateCost = averageCost !== '' && Number(averageCost) > 0 && shares !== '' && Number(shares) > 0;
+    const canAutoCalculateCost = parseNumber(averageCost) !== '' && Number(parseNumber(averageCost)) > 0 && shares !== '' && Number(shares) > 0;
 
     // 表示条件
     // ティッカー: 自動計算モードで非表示、手動モードで表示、入力済みなら常時表示
@@ -82,15 +99,15 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
     useEffect(() => {
         if (!isManualValue && canAutoCalculateValue) {
             const calculated = fetchedPrice! * Number(shares);
-            setCurrentValue(calculated.toString());
+            setCurrentValue(formatNumber(calculated));
         }
     }, [fetchedPrice, shares, isManualValue, canAutoCalculateValue]);
 
     // 取得価格と口数がある場合は取得額を自動計算
     useEffect(() => {
         if (!isManualCost && canAutoCalculateCost) {
-            const calculated = Number(averageCost) * Number(shares);
-            setTotalCost(calculated.toString());
+            const calculated = Number(parseNumber(averageCost)) * Number(shares);
+            setTotalCost(formatNumber(calculated));
         }
     }, [averageCost, shares, isManualCost, canAutoCalculateCost]);
 
@@ -160,7 +177,7 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
         // 自動モードに切り替えた瞬間、計算可能なら計算する
         if (!nextIsManual && canAutoCalculateValue) {
             const calculated = fetchedPrice! * Number(shares);
-            setCurrentValue(calculated.toString());
+            setCurrentValue(formatNumber(calculated));
         }
     };
 
@@ -171,8 +188,8 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
 
         // 自動モードに切り替えた瞬間、計算可能なら計算する
         if (!nextIsManual && canAutoCalculateCost) {
-            const calculated = Number(averageCost) * Number(shares);
-            setTotalCost(calculated.toString());
+            const calculated = Number(parseNumber(averageCost)) * Number(shares);
+            setTotalCost(formatNumber(calculated));
         }
     };
 
@@ -193,12 +210,12 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
                 name: name.trim(),
                 ticker: ticker.trim().toUpperCase() || undefined,
                 shares: shares ? Number(shares) : undefined,
-                averageCost: averageCost ? Number(averageCost) : undefined,
+                averageCost: averageCost ? Number(parseNumber(averageCost)) : undefined,
                 allocation,
                 currentPrice: fetchedPrice ?? editHolding?.currentPrice,
-                currentValue: Number(currentValue),
+                currentValue: Number(parseNumber(currentValue)),
                 isManualValue,
-                totalCost: totalCost ? Number(totalCost) : undefined,
+                totalCost: totalCost ? Number(parseNumber(totalCost)) : undefined,
                 isManualCost,
             };
 
@@ -229,7 +246,7 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
 
     const getCostAutoMessage = () => {
         if (!isManualCost) {
-            if (!averageCost || Number(averageCost) <= 0) return '※平均取得価格を入力してください';
+            if (!averageCost || Number(parseNumber(averageCost)) <= 0) return '※平均取得価格を入力してください';
             if (!shares || Number(shares) <= 0) return '※保有口数を入力してください';
         }
         return null;
@@ -304,13 +321,18 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
                             <label className="form-label">評価額 *</label>
                             <div className="value-input-row">
                                 <input
-                                    type="number"
+                                    type="text"
+                                    inputMode="decimal"
                                     className="form-input"
-                                    placeholder="1000000"
+                                    placeholder="1,000,000"
                                     value={currentValue}
-                                    onChange={e => setCurrentValue(e.target.value)}
-                                    min="0"
-                                    step="1"
+                                    onChange={e => {
+                                        if (/^[0-9.,]*$/.test(e.target.value)) {
+                                            setCurrentValue(e.target.value);
+                                        }
+                                    }}
+                                    onBlur={() => setCurrentValue(formatNumber(currentValue))}
+                                    onFocus={() => setCurrentValue(parseNumber(currentValue))}
                                     required
                                     disabled={!isManualValue}
                                 />
@@ -339,13 +361,18 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
                             <label className="form-label">取得額（任意）</label>
                             <div className="value-input-row">
                                 <input
-                                    type="number"
+                                    type="text"
+                                    inputMode="decimal"
                                     className="form-input"
-                                    placeholder="800000"
+                                    placeholder="800,000"
                                     value={totalCost}
-                                    onChange={e => setTotalCost(e.target.value)}
-                                    min="0"
-                                    step="1"
+                                    onChange={e => {
+                                        if (/^[0-9.,]*$/.test(e.target.value)) {
+                                            setTotalCost(e.target.value);
+                                        }
+                                    }}
+                                    onBlur={() => setTotalCost(formatNumber(totalCost))}
+                                    onFocus={() => setTotalCost(parseNumber(totalCost))}
                                     disabled={!isManualCost}
                                 />
                                 <button
@@ -447,13 +474,18 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
                             <div className="form-group">
                                 <label className="form-label">平均取得価格（任意）</label>
                                 <input
-                                    type="number"
+                                    type="text"
+                                    inputMode="decimal"
                                     className="form-input"
-                                    placeholder="15000"
+                                    placeholder="15,000"
                                     value={averageCost}
-                                    onChange={e => setAverageCost(e.target.value)}
-                                    min="0"
-                                    step="0.01"
+                                    onChange={e => {
+                                        if (/^[0-9.,]*$/.test(e.target.value)) {
+                                            setAverageCost(e.target.value);
+                                        }
+                                    }}
+                                    onBlur={() => setAverageCost(formatNumber(averageCost))}
+                                    onFocus={() => setAverageCost(parseNumber(averageCost))}
                                 />
                             </div>
                         )}
