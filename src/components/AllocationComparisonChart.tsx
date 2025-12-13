@@ -8,7 +8,7 @@ import {
     Legend
 } from 'chart.js';
 import type { AssetAllocation } from '../types';
-import { REGION_LABELS, REGION_COLORS } from '../types';
+import { REGION_LABELS, getCustomRegionColors } from '../types';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
@@ -18,6 +18,7 @@ interface AllocationComparisonChartProps {
 }
 
 export function AllocationComparisonChart({ current, target }: AllocationComparisonChartProps) {
+    const regionColors = getCustomRegionColors();
     const regions = Object.keys(current) as (keyof AssetAllocation)[];
     const labels = regions.map(key => REGION_LABELS[key]);
 
@@ -30,7 +31,7 @@ export function AllocationComparisonChart({ current, target }: AllocationCompari
             {
                 label: '現在',
                 data: regions.map(key => current[key]),
-                backgroundColor: regions.map(key => REGION_COLORS[key]),
+                backgroundColor: regions.map(key => regionColors[key]),
                 borderRadius: 4
             },
             {
@@ -74,10 +75,7 @@ export function AllocationComparisonChart({ current, target }: AllocationCompari
     };
 
     return (
-        <div>
-            <h4 className="card-title" style={{ marginBottom: '16px' }}>
-                目標との比較
-            </h4>
+        <>
             <div className="chart-container" style={{ height: '220px' }}>
                 <Bar data={data} options={options} />
             </div>
@@ -100,6 +98,6 @@ export function AllocationComparisonChart({ current, target }: AllocationCompari
                     })}
                 </div>
             </div>
-        </div>
+        </>
     );
 }

@@ -55,10 +55,34 @@ export const REGION_LABELS: Record<keyof AssetAllocation, string> = {
 };
 
 // 地域の色
-export const REGION_COLORS: Record<keyof AssetAllocation, string> = {
+export const DEFAULT_REGION_COLORS: Record<keyof AssetAllocation, string> = {
     us: '#3b82f6',       // 青
     japan: '#ef4444',     // 赤
     developed: '#22c55e', // 緑
     emerging: '#f59e0b',  // オレンジ
     other: '#8b5cf6'      // 紫
 };
+
+// 互換性のためのエイリアス
+export const REGION_COLORS = DEFAULT_REGION_COLORS;
+
+// カスタムカラー型
+export type RegionColors = Record<keyof AssetAllocation, string>;
+
+// カスタムカラーをlocalStorageから取得
+export function getCustomRegionColors(): RegionColors {
+    const stored = localStorage.getItem('regionColors');
+    if (stored) {
+        try {
+            return JSON.parse(stored) as RegionColors;
+        } catch {
+            return DEFAULT_REGION_COLORS;
+        }
+    }
+    return DEFAULT_REGION_COLORS;
+}
+
+// カスタムカラーをlocalStorageに保存
+export function saveCustomRegionColors(colors: RegionColors): void {
+    localStorage.setItem('regionColors', JSON.stringify(colors));
+}

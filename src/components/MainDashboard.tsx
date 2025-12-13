@@ -91,7 +91,9 @@ export function MainDashboard() {
             {summary && (
                 <div className="card summary-card">
                     <div className="card-header-collapsible">
-                        <h3 className="card-title">評価額</h3>
+                        <div className="card-header-left">
+                            <h3 className="card-title">評価額</h3>
+                        </div>
                         <button
                             className="collapse-toggle collapse-toggle-light"
                             onClick={() => setSummaryCollapsed(!summaryCollapsed)}

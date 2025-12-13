@@ -7,7 +7,7 @@ import {
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import type { AssetAllocation } from '../types';
-import { REGION_LABELS, REGION_COLORS } from '../types';
+import { REGION_LABELS, getCustomRegionColors } from '../types';
 
 ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 
@@ -17,10 +17,11 @@ interface AllocationPieChartProps {
 }
 
 export function AllocationPieChart({ allocation, title }: AllocationPieChartProps) {
+    const regionColors = getCustomRegionColors();
     const regions = Object.keys(allocation) as (keyof AssetAllocation)[];
     const values = regions.map(key => allocation[key]);
     const labels = regions.map(key => REGION_LABELS[key]);
-    const colors = regions.map(key => REGION_COLORS[key]);
+    const colors = regions.map(key => regionColors[key]);
 
     const data = {
         labels,
@@ -74,7 +75,7 @@ export function AllocationPieChart({ allocation, title }: AllocationPieChartProp
                     <div className="legend-item" key={key}>
                         <div
                             className="legend-color"
-                            style={{ backgroundColor: REGION_COLORS[key] }}
+                            style={{ backgroundColor: regionColors[key] }}
                         />
                         <span>{REGION_LABELS[key]}: {allocation[key].toFixed(1)}%</span>
                     </div>

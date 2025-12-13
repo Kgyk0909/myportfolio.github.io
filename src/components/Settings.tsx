@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { usePortfolioStore } from '../stores/portfolioStore';
 import type { AssetAllocation } from '../types';
 import { AllocationInput } from './AllocationInput';
+import { REGION_LABELS, DEFAULT_REGION_COLORS, getCustomRegionColors, saveCustomRegionColors, type RegionColors } from '../types';
 
 const defaultTarget: AssetAllocation = {
     us: 50,
@@ -20,6 +21,7 @@ export function Settings() {
     } = usePortfolioStore();
 
     const [targetAllocation, setTargetAllocation] = useState<AssetAllocation>(defaultTarget);
+    const [regionColors, setRegionColors] = useState<RegionColors>(DEFAULT_REGION_COLORS);
 
     useEffect(() => {
         loadPortfolios();
@@ -32,6 +34,8 @@ export function Settings() {
                 // ignore
             }
         }
+        // カスタムカラーを取得
+        setRegionColors(getCustomRegionColors());
     }, [loadPortfolios]);
 
     const handleSaveTarget = () => {
@@ -45,6 +49,22 @@ export function Settings() {
         });
 
         alert('目標アロケーションを保存しました');
+    };
+
+    const handleColorChange = (region: keyof AssetAllocation, color: string) => {
+        const newColors = { ...regionColors, [region]: color };
+        setRegionColors(newColors);
+    };
+
+    const handleSaveColors = () => {
+        saveCustomRegionColors(regionColors);
+        alert('グラフカラーを保存しました。ページを更新すると反映されます。');
+    };
+
+    const handleResetColors = () => {
+        setRegionColors(DEFAULT_REGION_COLORS);
+        saveCustomRegionColors(DEFAULT_REGION_COLORS);
+        alert('グラフカラーをリセットしました。');
     };
 
     const handleExportData = () => {
@@ -63,6 +83,8 @@ export function Settings() {
         a.click();
         URL.revokeObjectURL(url);
     };
+
+    const regions = Object.keys(regionColors) as (keyof AssetAllocation)[];
 
     return (
         <div className="settings">
@@ -85,6 +107,44 @@ export function Settings() {
                 >
                     💾 保存
                 </button>
+            </div>
+
+            {/* グラフカラー設定 */}
+            <div className="card">
+                <h4 className="card-title">グラフカラー設定</h4>
+                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '8px 0 16px' }}>
+                    各地域のグラフ表示色をカスタマイズ
+                </p>
+                <div className="color-settings">
+                    {regions.map(region => (
+                        <div className="color-item" key={region}>
+                            <label className="color-label">{REGION_LABELS[region]}</label>
+                            <div className="color-input-wrapper">
+                                <input
+                                    type="color"
+                                    value={regionColors[region]}
+                                    onChange={(e) => handleColorChange(region, e.target.value)}
+                                    className="color-picker"
+                                />
+                                <span className="color-value">{regionColors[region]}</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+                    <button
+                        className="btn btn-primary"
+                        onClick={handleSaveColors}
+                    >
+                        💾 保存
+                    </button>
+                    <button
+                        className="btn btn-secondary"
+                        onClick={handleResetColors}
+                    >
+                        🔄 リセット
+                    </button>
+                </div>
             </div>
 
             {/* データエクスポート */}
