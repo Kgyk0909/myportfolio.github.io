@@ -367,13 +367,13 @@ export function Settings() {
                         className="btn btn-primary"
                         onClick={handleSaveCardConfigs}
                     >
-                        💾 保存
+                        <i className="fa-solid fa-floppy-disk"></i> 保存
                     </button>
                     <button
                         className="btn btn-secondary"
                         onClick={handleResetCardConfigs}
                     >
-                        🔄 リセット
+                        <i className="fa-solid fa-rotate-right"></i> リセット
                     </button>
                 </div>
             </div>
@@ -485,13 +485,13 @@ export function Settings() {
                         className="btn btn-primary"
                         onClick={handleSaveColors}
                     >
-                        💾 保存
+                        <i className="fa-solid fa-floppy-disk"></i> 保存
                     </button>
                     <button
                         className="btn btn-secondary"
                         onClick={handleResetColors}
                     >
-                        🔄 リセット
+                        <i className="fa-solid fa-rotate-right"></i> リセット
                     </button>
                 </div>
             </div>
@@ -506,7 +506,7 @@ export function Settings() {
                     className="btn btn-secondary"
                     onClick={handleExportData}
                 >
-                    📥 JSONエクスポート
+                    <i className="fa-solid fa-file-export"></i> JSONエクスポート
                 </button>
             </div>
         </div>

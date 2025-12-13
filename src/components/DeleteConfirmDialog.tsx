@@ -17,7 +17,9 @@ export function DeleteConfirmDialog({
         <div className="modal-overlay" onClick={onCancel}>
             <div className="modal-content delete-confirm-dialog" onClick={e => e.stopPropagation()}>
                 <div className="delete-confirm-body">
-                    <div className="delete-confirm-icon">🗑</div>
+                    <div className="delete-confirm-icon">
+                        <i className="fa-solid fa-trash-can" style={{ fontSize: '2rem', color: 'var(--accent-red)' }}></i>
+                    </div>
                     <h3>削除の確認</h3>
                     <p>「{itemName}」を削除しますか？</p>
                 </div>

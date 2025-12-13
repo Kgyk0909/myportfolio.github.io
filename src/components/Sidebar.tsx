@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { usePortfolioStore } from '../stores/portfolioStore';
-import { PortfolioForm } from './PortfolioForm';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
 interface SidebarProps {
     isOpen: boolean;
     onClose: () => void;
     onPortfolioSelect?: () => void;
+    onEditPortfolio: (id?: number) => void;
 }
 
-export function Sidebar({ isOpen, onClose, onPortfolioSelect }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, onPortfolioSelect, onEditPortfolio }: SidebarProps) {
     const {
         portfolios,
         selectedPortfolioId,
@@ -17,8 +17,7 @@ export function Sidebar({ isOpen, onClose, onPortfolioSelect }: SidebarProps) {
         deletePortfolio
     } = usePortfolioStore();
 
-    const [showPortfolioForm, setShowPortfolioForm] = useState(false);
-    const [editPortfolioId, setEditPortfolioId] = useState<number | undefined>();
+    // 削除確認用のみローカルに残す
     const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; id?: number; name?: string }>({
         isOpen: false
     });
@@ -31,15 +30,14 @@ export function Sidebar({ isOpen, onClose, onPortfolioSelect }: SidebarProps) {
 
     const handleEditPortfolio = (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
-        setEditPortfolioId(id);
-        setShowPortfolioForm(true);
-        onClose(); // サイドバーを閉じる
+        onEditPortfolio(id); // 親へ通知
+        onClose();
     };
 
     const handleRequestDeletePortfolio = (e: React.MouseEvent, id: number, name: string) => {
         e.stopPropagation();
         setDeleteConfirm({ isOpen: true, id, name });
-        onClose(); // サイドバーを閉じる
+        onClose();
     };
 
     const handleConfirmDelete = async () => {
@@ -54,9 +52,8 @@ export function Sidebar({ isOpen, onClose, onPortfolioSelect }: SidebarProps) {
     };
 
     const handleAddPortfolio = () => {
-        setEditPortfolioId(undefined);
-        setShowPortfolioForm(true);
-        onClose(); // サイドバーを閉じる
+        onEditPortfolio(undefined); // 新規作成
+        onClose();
     };
 
     return (
@@ -120,17 +117,7 @@ export function Sidebar({ isOpen, onClose, onPortfolioSelect }: SidebarProps) {
                 </div>
             </aside>
 
-            {/* ポートフォリオフォームモーダル */}
-            {showPortfolioForm && (
-                <PortfolioForm
-                    onClose={() => setShowPortfolioForm(false)}
-                    editId={editPortfolioId}
-                    onCreated={(portfolioId) => {
-                        selectPortfolio(portfolioId);
-                        onPortfolioSelect?.();
-                    }}
-                />
-            )}
+            {/* ポートフォリオフォームモーダルはApp.tsxへ移動 */}
 
             {/* 削除確認ダイアログ */}
             <DeleteConfirmDialog

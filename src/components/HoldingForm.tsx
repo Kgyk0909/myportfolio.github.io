@@ -326,7 +326,7 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
                                             className="fund-search-item"
                                             onClick={() => handleSelectFund(fund)}
                                         >
-                                            <div className="fund-search-item-name">{fund.name}</div>
+                                            <div className="fund-search-item-name" style={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{fund.name}</div>
                                             <div className="fund-search-item-meta">
                                                 <span className="fund-search-item-short">{fund.shortName}</span>
                                                 <span className="fund-search-item-category">{fund.category}</span>

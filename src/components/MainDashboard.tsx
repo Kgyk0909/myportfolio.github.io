@@ -144,7 +144,8 @@ function SortableHoldingItem({
                     background: 'var(--accent-red)',
                     display: swipeOffset < 0 ? 'flex' : 'none', // スワイプ中のみ表示
                     alignItems: 'center',
-                    justifyContent: 'center',
+                    justifyContent: 'flex-end', // 右寄せにする
+                    paddingRight: '24px', // 右端からの余白
                     color: 'white',
                     zIndex: 1,
                     fontWeight: 'bold',
@@ -159,7 +160,7 @@ function SortableHoldingItem({
                     }
                 }}
             >
-                <i className="fa-solid fa-trash"></i> 削除
+                <i className="fa-solid fa-trash-can" style={{ marginRight: '8px' }}></i> 削除
             </div>
 
             {/* メインコンテンツ */}
@@ -221,7 +222,11 @@ function SortableHoldingItem({
     );
 }
 
-export function MainDashboard() {
+interface MainDashboardProps {
+    onPortfolioEdit?: () => void;
+}
+
+export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
     const {
         portfolios,
         holdings,
@@ -387,6 +392,17 @@ export function MainDashboard() {
                         <div className="card-header-collapsible">
                             <div className="card-header-left">
                                 <h4 className="card-title">目標との比較</h4>
+                                <button
+                                    className="btn btn-icon btn-sm"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onPortfolioEdit?.();
+                                    }}
+                                    title="目標アロケーションを編集"
+                                    style={{ marginLeft: '8px' }}
+                                >
+                                    <i className="fa-solid fa-pen"></i>
+                                </button>
                             </div>
                             <button
                                 className="collapse-toggle"

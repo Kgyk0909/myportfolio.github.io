@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { MainDashboard } from './components/MainDashboard';
 import { Sidebar } from './components/Sidebar';
 import { Settings } from './components/Settings';
+import { PortfolioForm } from './components/PortfolioForm';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { usePortfolioStore } from './stores/portfolioStore';
 import { fetchPrices } from './services/priceService';
@@ -16,13 +17,34 @@ function App() {
     const [isUpdating, setIsUpdating] = useState(false);
     const hasUpdatedRef = useRef(false);
 
+    const selectedPortfolio = portfolios.find(p => p.id === selectedPortfolioId);
+
     // ポートフォリオ名編集用ステート
     const [isEditingName, setIsEditingName] = useState(false);
     const [editingName, setEditingName] = useState('');
 
+    // ポートフォリオフォーム（作成・編集）用ステート
+    const [portfolioFormState, setPortfolioFormState] = useState<{ isOpen: boolean; editId?: number }>({
+        isOpen: false,
+        editId: undefined
+    });
+
     useEffect(() => {
         loadPortfolios();
     }, [loadPortfolios]);
+
+    // ハンドラ
+    const handleOpenPortfolioForm = (id?: number) => {
+        setPortfolioFormState({
+            isOpen: true,
+            editId: id
+        });
+        setIsSidebarOpen(false); // サイドバーが開いていれば閉じる
+    };
+
+    const handleClosePortfolioForm = () => {
+        setPortfolioFormState({ ...portfolioFormState, isOpen: false });
+    };
 
     // ハンドラ
     const handleNameClick = () => {
@@ -82,16 +104,24 @@ function App() {
         }
     }, [holdings, handleUpdatePrices]);
 
-    const selectedPortfolio = portfolios.find(p => p.id === selectedPortfolioId);
+    // ...
 
     const renderPage = () => {
         switch (currentPage) {
             case 'main':
-                return <MainDashboard />;
+                return (
+                    <MainDashboard
+                        onPortfolioEdit={() => handleOpenPortfolioForm(selectedPortfolioId || undefined)}
+                    />
+                );
             case 'settings':
                 return <Settings />;
             default:
-                return <MainDashboard />;
+                return (
+                    <MainDashboard
+                        onPortfolioEdit={() => handleOpenPortfolioForm(selectedPortfolioId || undefined)}
+                    />
+                );
         }
     };
 
@@ -164,6 +194,13 @@ function App() {
                         setCurrentPage('main');
                     }
                 }}
+                onEditPortfolio={(id) => {
+                    handleOpenPortfolioForm(id);
+                }}
+            // Sidebarの方でidを渡してもらう形にするか、App側で関数を用意するか。
+            // Sidebarは id を知っている。
+            // MainDashboard は selectedPortfolioId を知っている (store経由)。
+            // 共通化するため、Appで openPortfolioForm(id?) を定義する。
             />
 
             <main className="app-container">
@@ -172,6 +209,18 @@ function App() {
 
             {/* PWAインストールバナー */}
             <PWAInstallBanner />
+
+            {/* ポートフォリオフォームモーダル（Appレベルで管理） */}
+            {portfolioFormState.isOpen && (
+                <PortfolioForm
+                    onClose={handleClosePortfolioForm}
+                    editId={portfolioFormState.editId}
+                    onCreated={() => {
+                        handleClosePortfolioForm();
+                        // 必要なら選択切り替えなど
+                    }}
+                />
+            )}
         </div>
     );
 }
