@@ -39,6 +39,7 @@ export function Sidebar({ isOpen, onClose, onPortfolioSelect }: SidebarProps) {
     const handleRequestDeletePortfolio = (e: React.MouseEvent, id: number, name: string) => {
         e.stopPropagation();
         setDeleteConfirm({ isOpen: true, id, name });
+        onClose(); // サイドバーを閉じる
     };
 
     const handleConfirmDelete = async () => {
