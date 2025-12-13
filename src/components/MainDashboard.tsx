@@ -441,7 +441,7 @@ export function MainDashboard() {
                                         items={portfolioHoldings.map(h => h.id!)}
                                         strategy={verticalListSortingStrategy}
                                     >
-                                        <div className="holdings-list" style={{ paddingBottom: '80px' }}>
+                                        <div className="holdings-list">
                                             {portfolioHoldings.map(holding => (
                                                 <SortableHoldingItem
                                                     key={holding.id}
@@ -517,6 +517,9 @@ export function MainDashboard() {
                 onConfirm={handleDeleteHolding}
                 onCancel={() => setDeleteConfirm({ isOpen: false })}
             />
+
+            {/* 最下部のスペーサー（FAB回避用） */}
+            <div style={{ height: '80px', flexShrink: 0 }} />
         </div>
     );
 }

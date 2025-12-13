@@ -205,10 +205,10 @@ function calculateSummary(holdings: Holding[]): PortfolioSummary {
     for (const holding of holdings) {
         // 評価額はcurrentValueを直接使用
         const value = holding.currentValue;
-        // 取得額は口数と取得価格がある場合のみ計算
-        const cost = (holding.shares && holding.averageCost)
+        // 取得額は手入力(totalCost)がある場合はそれを優先、なければ口数と平均取得価格から計算
+        const cost = holding.totalCost ?? ((holding.shares && holding.averageCost)
             ? holding.averageCost * holding.shares
-            : 0;
+            : 0);
 
         totalValue += value;
         totalCost += cost;
