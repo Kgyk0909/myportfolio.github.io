@@ -26,13 +26,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 // デフォルトの目標アロケーション
-const defaultTarget: AssetAllocation = {
-    us: 50,
-    japan: 20,
-    developed: 15,
-    emerging: 10,
-    other: 5
-};
+
 
 // ソート可能な保有銘柄アイテムコンポーネント
 function SortableHoldingItem({
@@ -323,7 +317,7 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
     const selectedPortfolio = portfolios.find(p => p.id === selectedPortfolioId);
     const portfolioHoldings = holdings.filter(h => h.portfolioId === selectedPortfolioId);
     const summary = selectedPortfolioId ? getPortfolioSummary(selectedPortfolioId) : null;
-    const targetAllocation = selectedPortfolio?.targetAllocation ?? defaultTarget;
+
 
     // 並び替えモード
     const [isReorderMode, setIsReorderMode] = useState(false);
@@ -493,8 +487,31 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
                 );
 
             case 'comparison':
-                // ... (略)
-                if (portfolioHoldings.length === 0 || !summary) return null;
+                const targetAllocation = selectedPortfolio?.targetAllocation;
+                if (!targetAllocation || !summary) return null;
+
+                // 特定口座の表示設定とデータ取得
+                const specificOverride = cardConfigs.find(c => c.id === 'allocation_specific');
+                let specificAllocation: AssetAllocation | undefined;
+                if (specificOverride?.visible) {
+                    const specificHoldings = portfolioHoldings.filter(h => h.accountType === 'specific');
+                    if (specificHoldings.length > 0) {
+                        specificAllocation = calculateSummary(specificHoldings).currentAllocation;
+                    }
+                }
+
+                // 新NISAの表示設定とデータ取得
+                const nisaOverride = cardConfigs.find(c => c.id === 'allocation_nisa');
+                let nisaAllocation: AssetAllocation | undefined;
+                if (nisaOverride?.visible) {
+                    const nisaHoldings = portfolioHoldings.filter(h =>
+                        h.accountType === 'nisa_growth' || h.accountType === 'nisa_tsumitate'
+                    );
+                    if (nisaHoldings.length > 0) {
+                        nisaAllocation = calculateSummary(nisaHoldings).currentAllocation;
+                    }
+                }
+
                 return (
                     <div className="card" key="comparison">
                         <div className="card-header-collapsible">
@@ -523,6 +540,8 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
                             <AllocationComparisonChart
                                 current={summary.currentAllocation}
                                 target={targetAllocation}
+                                specific={specificAllocation}
+                                nisa={nisaAllocation}
                             />
                         )}
                     </div>

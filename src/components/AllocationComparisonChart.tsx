@@ -15,51 +15,70 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 interface AllocationComparisonChartProps {
     current: AssetAllocation;
     target: AssetAllocation;
+    specific?: AssetAllocation;
+    nisa?: AssetAllocation;
 }
 
-export function AllocationComparisonChart({ current, target }: AllocationComparisonChartProps) {
+export function AllocationComparisonChart({ current, target, specific, nisa }: AllocationComparisonChartProps) {
     const regionColors = getCustomRegionColors();
     const regions = Object.keys(current) as (keyof AssetAllocation)[];
-    const labels = regions.map(key => REGION_LABELS[key]);
 
-    // 差分を計算
-    const differences = regions.map(key => current[key] - target[key]);
+    // データ系列の定義
+    // 上から順に表示されるため、Canvasの原点(左上)とは逆の順序(配列の後ろが上)になることがあるが、
+    // Chart.jsのBar(horizontal)は配列のindex 0が上に来るのがデフォルト。
+    // ラベル: ['目標', '全体', '特定(一般)', '新NISA'] (存在するなら)
 
-    const data = {
+    const labels = ['目標', '全体'];
+    if (specific) labels.push('特定(一般)');
+    if (nisa) labels.push('新NISA');
+
+    // データセット構築やり直し: labelsに対応する値を確実に配列にする
+    const buildDataForRegion = (region: keyof AssetAllocation) => {
+        const data = [target[region], current[region]];
+        if (specific) data.push(specific[region]);
+        if (nisa) data.push(nisa[region]);
+        return data;
+    };
+
+    const chartData = {
         labels,
-        datasets: [
-            {
-                label: '現在',
-                data: regions.map(key => current[key]),
-                backgroundColor: regions.map(key => regionColors[key]),
-                borderRadius: 4
-            },
-            {
-                label: '目標',
-                data: regions.map(key => target[key]),
-                backgroundColor: 'rgba(148, 163, 184, 0.5)',
-                borderColor: 'rgba(148, 163, 184, 1)',
-                borderWidth: 2,
-                borderRadius: 4
-            }
-        ]
+        datasets: regions.map(region => ({
+            label: REGION_LABELS[region],
+            data: buildDataForRegion(region),
+            backgroundColor: regionColors[region],
+            barThickness: 32, // 帯の太さ
+        }))
     };
 
     const options = {
+        indexAxis: 'y' as const, // 横向き
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-            y: {
-                beginAtZero: true,
+            x: {
+                stacked: true,
                 max: 100,
+                grid: {
+                    color: '#f1f5f9'
+                },
                 ticks: {
                     callback: (value: string | number) => `${value}%`
+                }
+            },
+            y: {
+                stacked: true,
+                grid: {
+                    display: false
                 }
             }
         },
         plugins: {
             legend: {
-                position: 'top' as const
+                position: 'bottom' as const,
+                labels: {
+                    usePointStyle: true,
+                    boxWidth: 10
+                }
             },
             tooltip: {
                 callbacks: {
@@ -75,29 +94,8 @@ export function AllocationComparisonChart({ current, target }: AllocationCompari
     };
 
     return (
-        <>
-            <div className="chart-container" style={{ height: '220px' }}>
-                <Bar data={data} options={options} />
-            </div>
-
-            {/* 差分表示 */}
-            <div className="allocation-diff-section">
-                <h5 className="diff-title">目標との差</h5>
-                <div className="diff-list">
-                    {regions.map((key, index) => {
-                        const diff = differences[index] ?? 0;
-                        const isPositive = diff >= 0;
-                        return (
-                            <div className="diff-item" key={key}>
-                                <span className="diff-label">{REGION_LABELS[key]}</span>
-                                <span className={`diff-value ${isPositive ? 'over' : 'under'}`}>
-                                    {isPositive ? '+' : ''}{diff.toFixed(1)}%
-                                </span>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-        </>
+        <div className="chart-container" style={{ height: '300px' }}>
+            <Bar data={chartData} options={options} />
+        </div>
     );
 }
