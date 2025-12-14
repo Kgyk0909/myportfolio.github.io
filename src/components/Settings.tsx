@@ -16,6 +16,9 @@ import {
     type AllocationTemplate,
     getAllocationTemplates,
     saveAllocationTemplates,
+    getAddPosition,
+    saveAddPosition,
+    type AddPosition,
 } from '../types';
 
 // dnd-kit imports
@@ -196,6 +199,7 @@ export function Settings() {
     const [regionColors, setRegionColors] = useState<RegionColors>(DEFAULT_REGION_COLORS);
     const [cardConfigs, setCardConfigs] = useState<CardConfig[]>(DEFAULT_CARD_CONFIGS);
     const [templates, setTemplates] = useState<AllocationTemplate[]>([]);
+    const [addPosition, setAddPosition] = useState<AddPosition>('bottom');
 
     // テンプレートモーダル用ステート
     const [editingTemplate, setEditingTemplate] = useState<AllocationTemplate | undefined>();
@@ -226,6 +230,8 @@ export function Settings() {
         setCardConfigs(getCardConfigs());
         // テンプレートを取得
         setTemplates(getAllocationTemplates());
+        // 追加位置設定を取得
+        setAddPosition(getAddPosition());
     }, [loadPortfolios]);
 
     // 目標アロケーション保存・取得処理は削除
@@ -329,12 +335,47 @@ export function Settings() {
         URL.revokeObjectURL(url);
     };
 
+    const handleAddPositionChange = (position: AddPosition) => {
+        setAddPosition(position);
+        saveAddPosition(position);
+    };
+
     const regions = Object.keys(regionColors) as (keyof AssetAllocation)[];
     const sortedCardConfigs = [...cardConfigs].sort((a, b) => a.order - b.order);
 
     return (
         <div className="settings">
             <h2 style={{ marginBottom: '24px' }}>設定</h2>
+
+            {/* カード表示設定 */}
+            <div className="card">
+                <h4 className="card-title">一般設定</h4>
+                <div className="form-group">
+                    <label className="form-label">銘柄追加時の位置</label>
+                    <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
+                        <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                            <input
+                                type="radio"
+                                name="addPosition"
+                                value="bottom"
+                                checked={addPosition === 'bottom'}
+                                onChange={() => handleAddPositionChange('bottom')}
+                            />
+                            一覧の最後に追加
+                        </label>
+                        <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                            <input
+                                type="radio"
+                                name="addPosition"
+                                value="top"
+                                checked={addPosition === 'top'}
+                                onChange={() => handleAddPositionChange('top')}
+                            />
+                            一覧の先頭に追加
+                        </label>
+                    </div>
+                </div>
+            </div>
 
             {/* カード表示設定 */}
             <div className="card">

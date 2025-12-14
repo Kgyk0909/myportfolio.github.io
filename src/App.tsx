@@ -48,6 +48,12 @@ function App() {
 
     // ハンドラ
     const handleNameClick = () => {
+        // 設定画面の場合はメインに戻る
+        if (currentPage === 'settings') {
+            setCurrentPage('main');
+            return;
+        }
+
         if (selectedPortfolio) {
             setEditingName(selectedPortfolio.name);
             setIsEditingName(true);
@@ -137,7 +143,7 @@ function App() {
                     >
                         <i className="fa-solid fa-bars"></i>
                     </button>
-                    {selectedPortfolio && currentPage === 'main' && (
+                    {selectedPortfolio && (
                         isEditingName ? (
                             <input
                                 className="header-portfolio-name-input"

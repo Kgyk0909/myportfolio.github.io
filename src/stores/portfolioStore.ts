@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { db } from '../db/database';
 import type { Portfolio, Holding, AssetAllocation, PortfolioSummary } from '../types';
+import { getAddPosition } from '../types';
 
 interface PortfolioState {
     portfolios: Portfolio[];
@@ -131,9 +132,28 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
     },
 
     addHolding: async (holding: Omit<Holding, 'id'>) => {
-        const id = await db.holdings.add(holding as Holding);
-        const newHolding = { ...holding, id } as Holding;
-        set(state => ({ holdings: [...state.holdings, newHolding] }));
+        const position = getAddPosition();
+        const currentHoldings = get().holdings.filter(h => h.portfolioId === holding.portfolioId);
+
+        let sortOrder = 0;
+        if (currentHoldings.length > 0) {
+            if (position === 'bottom') {
+                const maxOrder = Math.max(...currentHoldings.map(h => h.sortOrder ?? 0));
+                sortOrder = maxOrder + 1;
+            } else {
+                const minOrder = Math.min(...currentHoldings.map(h => h.sortOrder ?? 0));
+                sortOrder = minOrder - 1;
+            }
+        }
+
+        const holdingWithOrder = { ...holding, sortOrder };
+        const id = await db.holdings.add(holdingWithOrder as Holding);
+        const newHolding = { ...holdingWithOrder, id } as Holding;
+
+        // 追加後に全体のソート順を保証する（この時点では配列末尾に追加でよいが、sortOrderに基づいてソートしておくのが安全）
+        set(state => ({
+            holdings: [...state.holdings, newHolding].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+        }));
         return newHolding;
     },
 
@@ -181,10 +201,12 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
     },
 
     reorderHoldings: async (portfolioId: number, orderedIds: number[]) => {
-        // 各holdingのsortOrderを更新
-        for (let i = 0; i < orderedIds.length; i++) {
-            await db.holdings.update(orderedIds[i], { sortOrder: i });
-        }
+        // トランザクションで一括更新
+        await db.transaction('rw', db.holdings, async () => {
+            for (let i = 0; i < orderedIds.length; i++) {
+                await db.holdings.update(orderedIds[i], { sortOrder: i });
+            }
+        });
         // ステートを更新
         set(state => ({
             holdings: state.holdings.map(h => {

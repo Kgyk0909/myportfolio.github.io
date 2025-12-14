@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { usePortfolioStore } from '../stores/portfolioStore';
 import { fetchPrice } from '../services/priceService';
 import { AllocationInput } from './AllocationInput';
-import type { Holding, AssetAllocation } from '../types';
+import type { Holding, AssetAllocation, AccountType } from '../types';
+import { ACCOUNT_TYPE_LABELS } from '../types';
 import fundsData from '../data/funds.json';
 import { getAllocationTemplates, type AllocationTemplate } from '../types';
 
@@ -59,6 +60,7 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
     const [allocation, setAllocation] = useState<AssetAllocation>(
         editHolding?.allocation ?? emptyAllocation
     );
+    const [accountType, setAccountType] = useState<AccountType | undefined>(editHolding?.accountType);
     const [templates] = useState<AllocationTemplate[]>(getAllocationTemplates());
     const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -266,6 +268,7 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
                 isManualValue,
                 totalCost: totalCost ? Number(parseNumber(totalCost)) : undefined,
                 isManualCost,
+                accountType,
             };
 
             if (editHolding?.id) {
@@ -372,6 +375,40 @@ export function HoldingForm({ portfolioId, onClose, editHolding, onDelete }: Hol
                                     overflow: 'hidden'
                                 }}
                             />
+                        </div>
+
+                        {/* 口座区分 */}
+                        <div className="form-group">
+                            <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <span>口座区分（任意）</span>
+                                {accountType && (
+                                    <button
+                                        type="button"
+                                        className="btn-text-only"
+                                        style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}
+                                        onClick={() => setAccountType(undefined)}
+                                    >
+                                        選択解除
+                                    </button>
+                                )}
+                            </label>
+                            <div className="account-type-selector" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                {(Object.keys(ACCOUNT_TYPE_LABELS) as AccountType[]).map((type) => (
+                                    <button
+                                        key={type}
+                                        type="button"
+                                        className={`btn ${accountType === type ? 'btn-primary' : 'btn-secondary-outline'}`}
+                                        style={{
+                                            fontSize: '0.8rem',
+                                            padding: '8px 4px',
+                                            justifyContent: 'center'
+                                        }}
+                                        onClick={() => setAccountType(type)}
+                                    >
+                                        {ACCOUNT_TYPE_LABELS[type]}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
                         {/* 評価額 */}

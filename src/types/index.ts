@@ -22,8 +22,20 @@ export interface Holding {
     isManualValue?: boolean;         // 評価額手動入力フラグ
     totalCost?: number;              // 取得額（任意）
     isManualCost?: boolean;          // 取得額手動入力フラグ
+    accountType?: AccountType;       // 口座区分
     lastUpdated?: Date;              // 最終更新日時
 }
+
+// 口座区分
+export type AccountType = 'specific' | 'nisa_growth' | 'nisa_tsumitate' | 'old_nisa';
+
+// 口座区分のラベル
+export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
+    specific: '特定(一般)',
+    nisa_growth: '新NISA(成長)',
+    nisa_tsumitate: '新NISA(つみたて)',
+    old_nisa: '旧NISA'
+};
 
 // カードID
 export type CardId = 'summary' | 'allocation' | 'comparison' | 'holdings';
@@ -206,4 +218,16 @@ export function getAllocationTemplates(): AllocationTemplate[] {
 export function saveAllocationTemplates(templates: AllocationTemplate[]): void {
     // デフォルト以外のものだけ保存する手もあるが、順序保持などのために全保存する
     localStorage.setItem('allocationTemplates', JSON.stringify(templates));
+    localStorage.setItem('allocationTemplates', JSON.stringify(templates));
+}
+
+// 銘柄追加位置の設定
+export type AddPosition = 'top' | 'bottom';
+
+export function getAddPosition(): AddPosition {
+    return (localStorage.getItem('addPosition') as AddPosition) || 'bottom';
+}
+
+export function saveAddPosition(position: AddPosition): void {
+    localStorage.setItem('addPosition', position);
 }
