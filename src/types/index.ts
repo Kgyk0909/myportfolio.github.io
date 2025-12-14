@@ -115,7 +115,8 @@ export interface PortfolioSummary {
     totalCost: number;               // 投資元本
     totalGain: number;               // 損益額
     gainPercent: number;             // 損益率
-    currentAllocation: AssetAllocation;  // 現在のアロケーション
+    currentAllocation: AssetAllocation;  // 現在のアロケーション(評価額ベース)
+    costAllocation: AssetAllocation;     // 現在のアロケーション(取得額ベース)
 }
 
 // 価格データ取得結果

@@ -7,17 +7,18 @@ import {
     Tooltip,
     Legend
 } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import type { AssetAllocation } from '../types';
 import { REGION_LABELS, getCustomRegionColors } from '../types';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend, ChartDataLabels);
 
 interface NisaUsageBarProps {
-    allocation: AssetAllocation;
-    totalNisaValue: number;
+    allocation: AssetAllocation; // 取得額ベースのAllocation
+    totalCost: number;           // 取得額合計
 }
 
-export function NisaUsageBar({ allocation, totalNisaValue }: NisaUsageBarProps) {
+export function NisaUsageBar({ allocation, totalCost }: NisaUsageBarProps) {
     const regionColors = getCustomRegionColors();
     const regions = Object.keys(allocation) as (keyof AssetAllocation)[];
 
@@ -25,20 +26,32 @@ export function NisaUsageBar({ allocation, totalNisaValue }: NisaUsageBarProps) 
     const MAX_NISA_LIMIT = 18_000_000;
 
     // 未使用枠
-    const unusedValue = Math.max(0, MAX_NISA_LIMIT - totalNisaValue);
+    const unusedValue = Math.max(0, MAX_NISA_LIMIT - totalCost);
 
     // データセット構築
-    // 1つのバー（indexAxis: 'y'）に、各地域 + 未使用枠を積み上げる
-    // dataset[0]: 米国 => value: totalNisaValue * (us / 100)
-
     const datasets = regions.map(region => {
-        // allocationは%なので金額に換算
-        const value = totalNisaValue * (allocation[region] / 100);
+        // allocationは%なので金額に換算（Costベース）
+        const value = totalCost * (allocation[region] / 100);
         return {
             label: REGION_LABELS[region],
             data: [value],
             backgroundColor: regionColors[region],
-            barThickness: 32
+            barThickness: 32,
+            datalabels: {
+                display: true,
+                color: '#fff',
+                font: {
+                    weight: 'bold' as const,
+                    size: 11
+                },
+                formatter: (val: number) => {
+                    // 1800万に対する割合（元本ベース）
+                    const percent = (val / MAX_NISA_LIMIT) * 100;
+                    // 小さすぎる場合は表示しない（重なり防止）
+                    if (percent < 3) return '';
+                    return `${percent.toFixed(1)}%`;
+                }
+            }
         };
     });
 
@@ -47,7 +60,10 @@ export function NisaUsageBar({ allocation, totalNisaValue }: NisaUsageBarProps) 
         label: '未使用枠',
         data: [unusedValue],
         backgroundColor: '#e2e8f0', // 薄いグレー
-        barThickness: 32
+        barThickness: 32,
+        datalabels: {
+            display: false
+        } as any
     });
 
     const data = {
@@ -67,6 +83,7 @@ export function NisaUsageBar({ allocation, totalNisaValue }: NisaUsageBarProps) 
                     color: '#f1f5f9'
                 },
                 ticks: {
+                    stepSize: 3_600_000, // 360万刻み
                     callback: (value: string | number) => {
                         return (Number(value) / 10000) + '万';
                     }
@@ -74,13 +91,12 @@ export function NisaUsageBar({ allocation, totalNisaValue }: NisaUsageBarProps) 
             },
             y: {
                 stacked: true,
-                display: false // Y軸ラベル（"新NISA利用状況"）はカードタイトルで十分なので非表示
+                display: false
             }
         },
         plugins: {
             legend: {
-                display: false // 凡例は地域が多いと邪魔かつ円グラフと重複するので非表示で良いか、下に出すか。要望は「分散状況+未使用枠」なので出したほうが親切。
-                // position: 'bottom' as const
+                display: false
             },
             tooltip: {
                 callbacks: {
@@ -95,23 +111,25 @@ export function NisaUsageBar({ allocation, totalNisaValue }: NisaUsageBarProps) 
                         return `${context.dataset.label}: ${formatted} (${percent.toFixed(1)}%)`;
                     }
                 }
+            },
+            datalabels: {
+                display: true
             }
         }
     };
 
     // 合計利用率
-    const usedPercent = (totalNisaValue / MAX_NISA_LIMIT) * 100;
+    const usedPercent = (totalCost / MAX_NISA_LIMIT) * 100;
 
     return (
         <div className="nisa-usage-container">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.875rem' }}>
-                <span>利用額: {new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY', maximumFractionDigits: 0 }).format(totalNisaValue)}</span>
+                <span>利用額(元本): {new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY', maximumFractionDigits: 0 }).format(totalCost)}</span>
                 <span>残枠: {new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY', maximumFractionDigits: 0 }).format(unusedValue)}</span>
             </div>
             <div className="chart-container" style={{ height: '80px' }}>
                 <Bar data={data} options={options} />
             </div>
-            {/* 簡易凡例（未使用枠だけ特別なので） */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 <span>利用率: {usedPercent.toFixed(1)}%</span>
             </div>

@@ -499,7 +499,14 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
                 // データがなくても枠はあるので表示してもいいが、保有ゼロなら利用ゼロとして表示
                 const nisaUsageSummary = nisaUsageHoldings.length > 0
                     ? calculateSummary(nisaUsageHoldings)
-                    : { currentAllocation: { us: 0, japan: 0, developed: 0, emerging: 0, other: 0 }, totalValue: 0, totalCost: 0, totalGain: 0, gainPercent: 0 }; // 空データ
+                    : {
+                        currentAllocation: { us: 0, japan: 0, developed: 0, emerging: 0, other: 0 },
+                        costAllocation: { us: 0, japan: 0, developed: 0, emerging: 0, other: 0 },
+                        totalValue: 0,
+                        totalCost: 0,
+                        totalGain: 0,
+                        gainPercent: 0
+                    }; // 空データ
 
                 return (
                     <div className="card" key="nisa_usage">
@@ -516,8 +523,8 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
                         </div>
                         {!nisaUsageCollapsed && (
                             <NisaUsageBar
-                                allocation={nisaUsageSummary.currentAllocation}
-                                totalNisaValue={nisaUsageSummary.totalValue}
+                                allocation={nisaUsageSummary.costAllocation}
+                                totalCost={nisaUsageSummary.totalCost}
                             />
                         )}
                     </div>

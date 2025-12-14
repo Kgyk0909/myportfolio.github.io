@@ -225,6 +225,7 @@ export function calculateSummary(holdings: Holding[]): PortfolioSummary {
     let totalValue = 0;
     let totalCost = 0;
     const allocationValues: AssetAllocation = { ...emptyAllocation };
+    const costAllocationValues: AssetAllocation = { ...emptyAllocation };
 
     for (const holding of holdings) {
         // 評価額はcurrentValueを直接使用
@@ -243,15 +244,31 @@ export function calculateSummary(holdings: Holding[]): PortfolioSummary {
         allocationValues.developed += value * (holding.allocation.developed / 100);
         allocationValues.emerging += value * (holding.allocation.emerging / 100);
         allocationValues.other += value * (holding.allocation.other / 100);
+
+        // 地域別の取得額を計算
+        costAllocationValues.us += cost * (holding.allocation.us / 100);
+        costAllocationValues.japan += cost * (holding.allocation.japan / 100);
+        costAllocationValues.developed += cost * (holding.allocation.developed / 100);
+        costAllocationValues.emerging += cost * (holding.allocation.emerging / 100);
+        costAllocationValues.other += cost * (holding.allocation.other / 100);
     }
 
-    // パーセントに変換
+    // パーセントに変換（評価額ベース）
     const currentAllocation: AssetAllocation = {
         us: totalValue > 0 ? (allocationValues.us / totalValue) * 100 : 0,
         japan: totalValue > 0 ? (allocationValues.japan / totalValue) * 100 : 0,
         developed: totalValue > 0 ? (allocationValues.developed / totalValue) * 100 : 0,
         emerging: totalValue > 0 ? (allocationValues.emerging / totalValue) * 100 : 0,
         other: totalValue > 0 ? (allocationValues.other / totalValue) * 100 : 0
+    };
+
+    // パーセントに変換（取得額ベース）
+    const costAllocation: AssetAllocation = {
+        us: totalCost > 0 ? (costAllocationValues.us / totalCost) * 100 : 0,
+        japan: totalCost > 0 ? (costAllocationValues.japan / totalCost) * 100 : 0,
+        developed: totalCost > 0 ? (costAllocationValues.developed / totalCost) * 100 : 0,
+        emerging: totalCost > 0 ? (costAllocationValues.emerging / totalCost) * 100 : 0,
+        other: totalCost > 0 ? (costAllocationValues.other / totalCost) * 100 : 0
     };
 
     const totalGain = totalValue - totalCost;
@@ -262,6 +279,7 @@ export function calculateSummary(holdings: Holding[]): PortfolioSummary {
         totalCost,
         totalGain,
         gainPercent,
-        currentAllocation
+        currentAllocation,
+        costAllocation
     };
 }
