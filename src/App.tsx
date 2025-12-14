@@ -13,7 +13,7 @@ type Page = 'main' | 'settings';
 function App() {
     const [currentPage, setCurrentPage] = useState<Page>('main');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const { loadPortfolios, holdings, updatePrices, portfolios, selectedPortfolioId, updatePortfolio } = usePortfolioStore();
+    const { loadPortfolios, holdings, updatePrices, portfolios, selectedPortfolioId, updatePortfolio, selectPortfolio } = usePortfolioStore();
     const [isUpdating, setIsUpdating] = useState(false);
     const hasUpdatedRef = useRef(false);
 
@@ -221,9 +221,9 @@ function App() {
                 <PortfolioForm
                     onClose={handleClosePortfolioForm}
                     editId={portfolioFormState.editId}
-                    onCreated={() => {
+                    onCreated={(id) => {
                         handleClosePortfolioForm();
-                        // 必要なら選択切り替えなど
+                        selectPortfolio(id);
                     }}
                 />
             )}

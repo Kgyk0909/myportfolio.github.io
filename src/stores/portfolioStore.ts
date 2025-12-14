@@ -61,15 +61,42 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
             const portfolios = await db.portfolios.toArray();
             set({ portfolios, isLoading: false });
 
-            // 最初のポートフォリオを自動選択してholdingsをロード
-            const firstPortfolio = portfolios[0];
-            if (firstPortfolio && firstPortfolio.id) {
-                const firstId = firstPortfolio.id;
-                set({ selectedPortfolioId: firstId });
+            // 以下の優先順位で選択する
+            // 1. 既にstoreで選択されている場合（state.selectedPortfolioId != null） -> そのまま
+            // 2. LocalStorageに保存されているIDがあり、それが有効な場合 -> それを選択
+            // 3. それ以外（初回ロードや該当ID削除済み） -> 最初のポートフォリオを選択
+
+            const { selectedPortfolioId } = get();
+
+            // 既に選択済みなら何もしない（リロード時などは初期stateでnullなのでここを通過して下へ行く）
+            if (selectedPortfolioId !== null) return;
+
+            let targetId: number | null = null;
+
+            // LocalStorageから復元
+            const storedId = localStorage.getItem('lastSelectedPortfolioId');
+            if (storedId) {
+                const parsedId = parseInt(storedId, 10);
+                const found = portfolios.find(p => p.id === parsedId);
+                if (found && found.id) {
+                    targetId = found.id;
+                }
+            }
+
+            // 見つからなければ最初のポートフォリオ
+            if (targetId === null && portfolios.length > 0) {
+                const first = portfolios[0];
+                if (first && first.id) {
+                    targetId = first.id;
+                }
+            }
+
+            if (targetId !== null) {
+                set({ selectedPortfolioId: targetId });
                 // holdingsをロード
                 const holdings = await db.holdings
                     .where('portfolioId')
-                    .equals(firstId)
+                    .equals(targetId)
                     .toArray();
                 // sortOrderでソート
                 holdings.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
@@ -104,17 +131,44 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
     deletePortfolio: async (id: number) => {
         await db.portfolios.delete(id);
         await db.holdings.where('portfolioId').equals(id).delete();
-        set(state => ({
-            portfolios: state.portfolios.filter(p => p.id !== id),
-            holdings: state.holdings.filter(h => h.portfolioId !== id),
-            selectedPortfolioId: state.selectedPortfolioId === id ? null : state.selectedPortfolioId
-        }));
+
+        // 削除対象が選択されていた場合は選択解除（store更新後に自動的に他のポートフォリオを選択するかはUI側のreloadなどに任せるか、ここでやるか）
+        set(state => {
+            const newPortfolios = state.portfolios.filter(p => p.id !== id);
+            const isSelected = state.selectedPortfolioId === id;
+            let nextId = state.selectedPortfolioId;
+
+            if (isSelected) {
+                nextId = null; // 一旦クリア
+                localStorage.removeItem('lastSelectedPortfolioId');
+            }
+
+            return {
+                portfolios: newPortfolios,
+                holdings: state.holdings.filter(h => h.portfolioId !== id),
+                selectedPortfolioId: nextId
+            };
+        });
+
+        // 削除後に再ロードするか、あるいは自動選択ロジックをここで動かすのが親切
+        if (get().selectedPortfolioId === null) {
+            const remaining = get().portfolios;
+            if (remaining.length > 0) {
+                const firstId = remaining[0]?.id;
+                if (firstId) {
+                    get().selectPortfolio(firstId);
+                }
+            }
+        }
     },
 
     selectPortfolio: (id: number | null) => {
         set({ selectedPortfolioId: id });
         if (id !== null) {
+            localStorage.setItem('lastSelectedPortfolioId', id.toString());
             get().loadHoldings(id);
+        } else {
+            localStorage.removeItem('lastSelectedPortfolioId');
         }
     },
 
