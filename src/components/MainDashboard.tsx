@@ -121,7 +121,8 @@ function SortableHoldingItem({
         zIndex: 2,
         touchAction: 'pan-y', // 縦スクロール許可
         userSelect: 'none' as const, // 長押し時の選択防止
-        paddingBottom: isReorderMode ? '24px' : '0px', // ハンドル分のスペース
+        paddingTop: '12px', // 上の余白を少し小さく
+        paddingBottom: isReorderMode ? '40px' : '16px', // 通常時は16px確保、モード時はハンドル分追加
         transitionProperty: 'padding-bottom',
     };
 
