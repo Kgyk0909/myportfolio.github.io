@@ -122,6 +122,8 @@ function SortableHoldingItem({
         backgroundColor: 'var(--bg-card)', // 背景色必須
         position: 'relative' as const,
         zIndex: 2,
+        touchAction: 'pan-y', // 縦スクロールを許可
+        userSelect: 'none' as const, // 長押し時の選択防止
     };
 
     // 評価額はcurrentValueを直接使用
