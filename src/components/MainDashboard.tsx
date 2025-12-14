@@ -287,8 +287,8 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
         }),
         useSensor(TouchSensor, {
             activationConstraint: {
-                delay: 250,
-                tolerance: 5,
+                delay: 200,
+                tolerance: 15,
             },
         })
     );
