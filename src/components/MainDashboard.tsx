@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { usePortfolioStore, calculateSummary } from '../stores/portfolioStore';
 import { AllocationPieChart } from './AllocationPieChart';
 import { AllocationComparisonChart } from './AllocationComparisonChart';
+import { NisaUsageBar } from './NisaUsageBar';
 import { HoldingForm } from './HoldingForm';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import type { AssetAllocation, Holding, CardConfig, CardId } from '../types';
@@ -288,6 +289,7 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
     const [allocationCollapsed, setAllocationCollapsed] = useState(false);
     const [allocationSpecificCollapsed, setAllocationSpecificCollapsed] = useState(false);
     const [allocationNisaCollapsed, setAllocationNisaCollapsed] = useState(false);
+    const [nisaUsageCollapsed, setNisaUsageCollapsed] = useState(false);
     const [comparisonCollapsed, setComparisonCollapsed] = useState(false);
     const [holdingsCollapsed, setHoldingsCollapsed] = useState(false);
 
@@ -427,6 +429,7 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
                         {!allocationCollapsed && (
                             <AllocationPieChart
                                 allocation={summary.currentAllocation}
+                                totalValue={summary.totalValue}
                             />
                         )}
                     </div>
@@ -453,6 +456,7 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
                         {!allocationSpecificCollapsed && (
                             <AllocationPieChart
                                 allocation={specificSummary.currentAllocation}
+                                totalValue={specificSummary.totalValue}
                             />
                         )}
                     </div>
@@ -481,6 +485,39 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
                         {!allocationNisaCollapsed && (
                             <AllocationPieChart
                                 allocation={nisaSummary.currentAllocation}
+                                totalValue={nisaSummary.totalValue}
+                            />
+                        )}
+                    </div>
+                );
+
+            case 'nisa_usage':
+                if (portfolioHoldings.length === 0 || !summary) return null;
+                const nisaUsageHoldings = portfolioHoldings.filter(h =>
+                    h.accountType === 'nisa_growth' || h.accountType === 'nisa_tsumitate'
+                );
+                // データがなくても枠はあるので表示してもいいが、保有ゼロなら利用ゼロとして表示
+                const nisaUsageSummary = nisaUsageHoldings.length > 0
+                    ? calculateSummary(nisaUsageHoldings)
+                    : { currentAllocation: { us: 0, japan: 0, developed: 0, emerging: 0, other: 0 }, totalValue: 0, totalCost: 0, totalGain: 0, gainPercent: 0 }; // 空データ
+
+                return (
+                    <div className="card" key="nisa_usage">
+                        <div className="card-header-collapsible">
+                            <div className="card-header-left">
+                                <h4 className="card-title">新NISA枠利用状況</h4>
+                            </div>
+                            <button
+                                className="collapse-toggle"
+                                onClick={() => setNisaUsageCollapsed(!nisaUsageCollapsed)}
+                            >
+                                <i className={`fa-solid fa-chevron-${nisaUsageCollapsed ? 'down' : 'up'}`}></i>
+                            </button>
+                        </div>
+                        {!nisaUsageCollapsed && (
+                            <NisaUsageBar
+                                allocation={nisaUsageSummary.currentAllocation}
+                                totalNisaValue={nisaUsageSummary.totalValue}
                             />
                         )}
                     </div>

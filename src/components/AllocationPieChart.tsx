@@ -1,4 +1,4 @@
-import { Pie } from 'react-chartjs-2';
+import { Doughnut } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
     ArcElement,
@@ -15,9 +15,10 @@ interface AllocationPieChartProps {
     allocation: AssetAllocation;
     title?: string;
     showLegend?: boolean;
+    totalValue?: number;
 }
 
-export function AllocationPieChart({ allocation, title, showLegend = true }: AllocationPieChartProps) {
+export function AllocationPieChart({ allocation, title, showLegend = true, totalValue }: AllocationPieChartProps) {
     const regionColors = getCustomRegionColors();
     const regions = Object.keys(allocation) as (keyof AssetAllocation)[];
     const values = regions.map(key => allocation[key]);
@@ -37,6 +38,7 @@ export function AllocationPieChart({ allocation, title, showLegend = true }: All
     const options = {
         responsive: true,
         maintainAspectRatio: false,
+        cutout: '60%',
         plugins: {
             legend: {
                 display: false
@@ -65,11 +67,31 @@ export function AllocationPieChart({ allocation, title, showLegend = true }: All
         }
     };
 
+    const formattedTotal = totalValue !== undefined ? new Intl.NumberFormat('ja-JP', {
+        style: 'currency',
+        currency: 'JPY',
+        maximumFractionDigits: 0
+    }).format(totalValue) : '';
+
     return (
         <div>
             {title && <h4 className="card-title" style={{ marginBottom: '16px' }}>{title}</h4>}
-            <div className="chart-container">
-                <Pie data={data} options={options} />
+            <div className="chart-container" style={{ position: 'relative' }}>
+                <Doughnut data={data} options={options} />
+                {totalValue !== undefined && (
+                    <div style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        textAlign: 'center',
+                        pointerEvents: 'none',
+                        width: '80%'
+                    }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>評価額</div>
+                        <div style={{ fontSize: '1rem', fontWeight: 'bold' }}>{formattedTotal}</div>
+                    </div>
+                )}
             </div>
             {showLegend && (
                 <div className="chart-legend">

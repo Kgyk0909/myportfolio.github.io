@@ -239,24 +239,23 @@ export function Settings() {
     const handleColorChange = (region: keyof AssetAllocation, color: string) => {
         const newColors = { ...regionColors, [region]: color };
         setRegionColors(newColors);
+        saveCustomRegionColors(newColors);
     };
 
-    const handleSaveColors = () => {
-        saveCustomRegionColors(regionColors);
-        alert('グラフカラーを保存しました。ページを更新すると反映されます。');
-    };
+    // 保存ボタン削除のためhandleSaveColors削除
 
     const handleResetColors = () => {
-        setRegionColors(DEFAULT_REGION_COLORS);
-        saveCustomRegionColors(DEFAULT_REGION_COLORS);
-        alert('グラフカラーをリセットしました。');
+        if (confirm('グラフカラーをリセットしてもよろしいですか？')) {
+            setRegionColors(DEFAULT_REGION_COLORS);
+            saveCustomRegionColors(DEFAULT_REGION_COLORS);
+        }
     };
 
     // カード設定の可視性変更
     const handleCardVisibilityChange = (id: CardId, visible: boolean) => {
-        setCardConfigs(configs =>
-            configs.map(c => c.id === id ? { ...c, visible } : c)
-        );
+        const newConfigs = cardConfigs.map(c => c.id === id ? { ...c, visible } : c);
+        setCardConfigs(newConfigs);
+        saveCardConfigs(newConfigs);
     };
 
     // カード設定のドラッグ終了
@@ -268,24 +267,24 @@ export function Settings() {
                 const oldIndex = configs.findIndex(c => c.id === active.id);
                 const newIndex = configs.findIndex(c => c.id === over.id);
 
-                const newConfigs = arrayMove(configs, oldIndex, newIndex);
-                // orderを更新
-                return newConfigs.map((c, i) => ({ ...c, order: i }));
+                const newOrder = arrayMove(configs, oldIndex, newIndex);
+                const updatedConfigs = newOrder.map((c, i) => ({ ...c, order: i }));
+
+                // 即時保存
+                saveCardConfigs(updatedConfigs);
+                return updatedConfigs;
             });
         }
     };
 
-    // カード設定の保存
-    const handleSaveCardConfigs = () => {
-        saveCardConfigs(cardConfigs);
-        alert('カード表示設定を保存しました。');
-    };
+    // 保存ボタン削除のためhandleSaveCardConfigs削除
 
     // カード設定のリセット
     const handleResetCardConfigs = () => {
-        setCardConfigs(DEFAULT_CARD_CONFIGS);
-        saveCardConfigs(DEFAULT_CARD_CONFIGS);
-        alert('カード表示設定をリセットしました。');
+        if (confirm('カード表示設定をリセットしてもよろしいですか？')) {
+            setCardConfigs(DEFAULT_CARD_CONFIGS);
+            saveCardConfigs(DEFAULT_CARD_CONFIGS);
+        }
     };
 
     const handleSaveTemplate = (template: AllocationTemplate) => {
@@ -405,12 +404,6 @@ export function Settings() {
                 </DndContext>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
                     <button
-                        className="btn btn-primary"
-                        onClick={handleSaveCardConfigs}
-                    >
-                        <i className="fa-solid fa-floppy-disk"></i> 保存
-                    </button>
-                    <button
                         className="btn btn-secondary"
                         onClick={handleResetCardConfigs}
                     >
@@ -522,12 +515,6 @@ export function Settings() {
                     ))}
                 </div>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
-                    <button
-                        className="btn btn-primary"
-                        onClick={handleSaveColors}
-                    >
-                        <i className="fa-solid fa-floppy-disk"></i> 保存
-                    </button>
                     <button
                         className="btn btn-secondary"
                         onClick={handleResetColors}

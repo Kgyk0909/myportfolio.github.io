@@ -38,7 +38,7 @@ export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
 };
 
 // カードID
-export type CardId = 'summary' | 'allocation' | 'allocation_specific' | 'allocation_nisa' | 'comparison' | 'holdings';
+export type CardId = 'summary' | 'allocation' | 'allocation_specific' | 'allocation_nisa' | 'nisa_usage' | 'comparison' | 'holdings';
 
 // カード設定
 export interface CardConfig {
@@ -53,6 +53,7 @@ export const DEFAULT_CARD_CONFIGS: CardConfig[] = [
     { id: 'allocation', visible: true, order: 1 },
     { id: 'allocation_specific', visible: false, order: 1.1 }, // 特定口座（初期非表示）
     { id: 'allocation_nisa', visible: false, order: 1.2 },     // 新NISA（初期非表示）
+    { id: 'nisa_usage', visible: true, order: 1.5 },
     { id: 'comparison', visible: true, order: 2 },
     { id: 'holdings', visible: true, order: 3 },
 ];
@@ -63,6 +64,7 @@ export const CARD_LABELS: Record<CardId, string> = {
     allocation: '地域別分散状況',
     allocation_specific: '地域別分散状況（特定口座）',
     allocation_nisa: '地域別分散状況（新NISA）',
+    nisa_usage: '新NISA枠利用状況',
     comparison: '目標との比較',
     holdings: '保有銘柄',
 };
