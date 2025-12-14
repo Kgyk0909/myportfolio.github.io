@@ -38,7 +38,7 @@ export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
 };
 
 // カードID
-export type CardId = 'summary' | 'allocation' | 'comparison' | 'holdings';
+export type CardId = 'summary' | 'allocation' | 'allocation_specific' | 'allocation_nisa' | 'comparison' | 'holdings';
 
 // カード設定
 export interface CardConfig {
@@ -51,6 +51,8 @@ export interface CardConfig {
 export const DEFAULT_CARD_CONFIGS: CardConfig[] = [
     { id: 'summary', visible: true, order: 0 },
     { id: 'allocation', visible: true, order: 1 },
+    { id: 'allocation_specific', visible: false, order: 1.1 }, // 特定口座（初期非表示）
+    { id: 'allocation_nisa', visible: false, order: 1.2 },     // 新NISA（初期非表示）
     { id: 'comparison', visible: true, order: 2 },
     { id: 'holdings', visible: true, order: 3 },
 ];
@@ -59,6 +61,8 @@ export const DEFAULT_CARD_CONFIGS: CardConfig[] = [
 export const CARD_LABELS: Record<CardId, string> = {
     summary: '評価額',
     allocation: '地域別分散状況',
+    allocation_specific: '地域別分散状況（特定口座）',
+    allocation_nisa: '地域別分散状況（新NISA）',
     comparison: '目標との比較',
     holdings: '保有銘柄',
 };
@@ -68,7 +72,21 @@ export function getCardConfigs(): CardConfig[] {
     const stored = localStorage.getItem('cardConfigs');
     if (stored) {
         try {
-            return JSON.parse(stored) as CardConfig[];
+            const parsed = JSON.parse(stored) as CardConfig[];
+            // 保存データにない新しいカード設定があればマージする
+            const merged = [...parsed];
+            let hasChanges = false;
+            for (const defaultConfig of DEFAULT_CARD_CONFIGS) {
+                if (!merged.some(c => c.id === defaultConfig.id)) {
+                    merged.push(defaultConfig);
+                    hasChanges = true;
+                }
+            }
+            // 変更があった場合は保存し直す（次回以降のために）
+            if (hasChanges) {
+                saveCardConfigs(merged);
+            }
+            return merged;
         } catch {
             return DEFAULT_CARD_CONFIGS;
         }

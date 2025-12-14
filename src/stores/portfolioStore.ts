@@ -221,7 +221,7 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
 }));
 
 // サマリー計算ヘルパー
-function calculateSummary(holdings: Holding[]): PortfolioSummary {
+export function calculateSummary(holdings: Holding[]): PortfolioSummary {
     let totalValue = 0;
     let totalCost = 0;
     const allocationValues: AssetAllocation = { ...emptyAllocation };

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { usePortfolioStore } from '../stores/portfolioStore';
+import { usePortfolioStore, calculateSummary } from '../stores/portfolioStore';
 import { AllocationPieChart } from './AllocationPieChart';
 import { AllocationComparisonChart } from './AllocationComparisonChart';
 import { HoldingForm } from './HoldingForm';
@@ -281,6 +281,8 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
         reorderHoldings
     } = usePortfolioStore();
 
+
+
     const [showHoldingForm, setShowHoldingForm] = useState(false);
     const [editHolding, setEditHolding] = useState<Holding | undefined>();
     const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; holding?: Holding }>({
@@ -290,6 +292,8 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
     // 折りたたみ状態
     const [summaryCollapsed, setSummaryCollapsed] = useState(false);
     const [allocationCollapsed, setAllocationCollapsed] = useState(false);
+    const [allocationSpecificCollapsed, setAllocationSpecificCollapsed] = useState(false);
+    const [allocationNisaCollapsed, setAllocationNisaCollapsed] = useState(false);
     const [comparisonCollapsed, setComparisonCollapsed] = useState(false);
     const [holdingsCollapsed, setHoldingsCollapsed] = useState(false);
 
@@ -429,6 +433,60 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
                         {!allocationCollapsed && (
                             <AllocationPieChart
                                 allocation={summary.currentAllocation}
+                            />
+                        )}
+                    </div>
+                );
+
+            case 'allocation_specific':
+                if (portfolioHoldings.length === 0 || !summary) return null;
+                const specificHoldings = portfolioHoldings.filter(h => h.accountType === 'specific');
+                const specificSummary = calculateSummary(specificHoldings);
+
+                return (
+                    <div className="card" key="allocation_specific">
+                        <div className="card-header-collapsible">
+                            <div className="card-header-left">
+                                <h4 className="card-title">地域別分散状況（特定口座）</h4>
+                            </div>
+                            <button
+                                className="collapse-toggle"
+                                onClick={() => setAllocationSpecificCollapsed(!allocationSpecificCollapsed)}
+                            >
+                                <i className={`fa-solid fa-chevron-${allocationSpecificCollapsed ? 'down' : 'up'}`}></i>
+                            </button>
+                        </div>
+                        {!allocationSpecificCollapsed && (
+                            <AllocationPieChart
+                                allocation={specificSummary.currentAllocation}
+                            />
+                        )}
+                    </div>
+                );
+
+            case 'allocation_nisa':
+                if (portfolioHoldings.length === 0 || !summary) return null;
+                const nisaHoldings = portfolioHoldings.filter(h =>
+                    h.accountType === 'nisa_growth' || h.accountType === 'nisa_tsumitate'
+                );
+                const nisaSummary = calculateSummary(nisaHoldings);
+
+                return (
+                    <div className="card" key="allocation_nisa">
+                        <div className="card-header-collapsible">
+                            <div className="card-header-left">
+                                <h4 className="card-title">地域別分散状況（新NISA）</h4>
+                            </div>
+                            <button
+                                className="collapse-toggle"
+                                onClick={() => setAllocationNisaCollapsed(!allocationNisaCollapsed)}
+                            >
+                                <i className={`fa-solid fa-chevron-${allocationNisaCollapsed ? 'down' : 'up'}`}></i>
+                            </button>
+                        </div>
+                        {!allocationNisaCollapsed && (
+                            <AllocationPieChart
+                                allocation={nisaSummary.currentAllocation}
                             />
                         )}
                     </div>
