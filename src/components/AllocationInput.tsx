@@ -20,9 +20,29 @@ export function AllocationInput({ value, onChange }: AllocationInputProps) {
     const isValid = Math.abs(total - 100) < 0.01;
 
     const handleChange = (key: keyof AssetAllocation, newValue: number) => {
+        // 現在操作中のキー以外の合計を計算
+        const otherTotal = regions
+            .filter(r => r !== key)
+            .reduce((sum, r) => sum + allocation[r], 0);
+
+        // 残り（100%にするために必要な値）
+        const remaining = 100 - otherTotal;
+
+        let targetValue = newValue;
+
+        // スナップ処理: 残りの値に近ければ吸着させる (±1.5の範囲)
+        // 例: 残りが20で、スライダーを19~21に動かしたら20にする
+        if (Math.abs(newValue - remaining) < 1.5) {
+            targetValue = remaining;
+        }
+
         // 0-100の範囲に制限
-        const clampedValue = Math.max(0, Math.min(100, newValue));
-        const updated = { ...allocation, [key]: clampedValue };
+        const clampedValue = Math.max(0, Math.min(100, targetValue));
+
+        // 浮動小数点誤差対策 (整数で管理するが念のため)
+        const roundedValue = Math.round(clampedValue * 100) / 100;
+
+        const updated = { ...allocation, [key]: roundedValue };
         setAllocation(updated);
         onChange(updated);
     };
@@ -37,7 +57,7 @@ export function AllocationInput({ value, onChange }: AllocationInputProps) {
                         className="allocation-slider"
                         min="0"
                         max="100"
-                        step="0.1" // スライダーは0.1刻みくらいが使いやすい
+                        step="1" // 1%刻みに変更
                         value={allocation[key]}
                         onChange={e => handleChange(key, Number(e.target.value))}
                     />
