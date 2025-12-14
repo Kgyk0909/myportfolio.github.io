@@ -39,12 +39,14 @@ function SortableHoldingItem({
     holding,
     formatCurrency,
     onEdit,
-    onDeleteRequest // 削除リクエスト用コールバック
+    onDeleteRequest,
+    isReorderMode // 追加
 }: {
     holding: Holding;
     formatCurrency: (value: number) => string;
     onEdit: (holding: Holding) => void;
     onDeleteRequest: (holding: Holding) => void;
+    isReorderMode?: boolean;
 }) {
     const {
         attributes,
@@ -60,47 +62,42 @@ function SortableHoldingItem({
     const [isDeleteVisible, setIsDeleteVisible] = useState(false);
     const touchStartX = useRef<number | null>(null);
     const touchStartY = useRef<number | null>(null);
-    const SWIPE_THRESHOLD = -80; // このピクセル以上左に行くと削除ボタン固定
-    const MAX_SWIPE = -120; // 最大スワイプ量
+    const SWIPE_THRESHOLD = -80;
+    const MAX_SWIPE = -120;
 
     const handleTouchStart = (e: React.TouchEvent) => {
-        if (isDragging || !e.touches[0]) return;
+        // 並び替えモード中はスワイプ無効
+        if (isDragging || isReorderMode || !e.touches[0]) return;
         touchStartX.current = e.touches[0].clientX;
         touchStartY.current = e.touches[0].clientY;
     };
 
     const handleTouchMove = (e: React.TouchEvent) => {
-        if (isDragging || touchStartX.current === null || touchStartY.current === null || !e.touches[0]) return;
+        if (isDragging || isReorderMode || touchStartX.current === null || touchStartY.current === null || !e.touches[0]) return;
         const currentX = e.touches[0].clientX;
         const currentY = e.touches[0].clientY;
         const diffX = currentX - touchStartX.current;
         const diffY = currentY - touchStartY.current;
 
-        // 縦スクロール判定: X軸移動よりY軸移動が大きい場合はスワイプ判定しない（ブラウザのスクロールに任せる）
         if (Math.abs(diffY) > Math.abs(diffX)) {
             return;
         }
 
-        // 左スワイプのみ (または開いた状態からの右スワイプ)
         let newOffset = (isDeleteVisible ? SWIPE_THRESHOLD : 0) + diffX;
-
-        // 範囲制限
-        if (newOffset > 0) newOffset = 0; // 右に行き過ぎない
-        if (newOffset < MAX_SWIPE) newOffset = MAX_SWIPE; // 左に行き過ぎない
+        if (newOffset > 0) newOffset = 0;
+        if (newOffset < MAX_SWIPE) newOffset = MAX_SWIPE;
 
         setSwipeOffset(newOffset);
     };
 
     const handleTouchEnd = () => {
-        if (isDragging || touchStartX.current === null) return;
+        if (isDragging || isReorderMode || touchStartX.current === null) return;
         touchStartX.current = null;
 
         if (swipeOffset < SWIPE_THRESHOLD / 2) {
-            // 十分左にスワイプしたら開く
             setSwipeOffset(SWIPE_THRESHOLD);
             setIsDeleteVisible(true);
         } else {
-            // 戻る
             setSwipeOffset(0);
             setIsDeleteVisible(false);
         }
@@ -108,25 +105,27 @@ function SortableHoldingItem({
 
     const style = {
         transform: CSS.Transform.toString(transform),
-        transition: isDragging ? undefined : (swipeOffset !== 0 ? 'none' : transition), // スワイプ中はtransitionなし
+        transition: isDragging ? undefined : (swipeOffset !== 0 ? 'none' : transition),
         opacity: isDragging ? 0.5 : 1,
-        touchAction: isDragging ? 'none' : 'pan-y', // ドラッグ中はスクロール禁止、それ以外は縦スクロール許可
+        touchAction: 'pan-y', // 縦スクロールは常に許可（ハンドル以外）
         position: 'relative' as const,
         marginBottom: '8px',
-        overflow: 'hidden' // はみ出し非表示
+        overflow: 'hidden'
     };
 
-    // コンテンツ部分がスライドするスタイル
     const contentStyle = {
         transform: `translateX(${swipeOffset}px)`,
         transition: isDragging ? 'none' : 'transform 0.2s ease-out',
-        backgroundColor: 'var(--bg-card)', // 背景色必須
+        backgroundColor: 'var(--bg-card)',
         position: 'relative' as const,
         zIndex: 2,
-        touchAction: isDragging ? 'none' : 'pan-y', // ドラッグ中はスクロール禁止
+        touchAction: 'pan-y', // 縦スクロール許可
         userSelect: 'none' as const, // 長押し時の選択防止
+        paddingBottom: isReorderMode ? '24px' : '0px', // ハンドル分のスペース
+        transitionProperty: 'padding-bottom',
     };
 
+    // ... (計算ロジック略) ...
     // 評価額はcurrentValueを直接使用
     const currentValue = holding.currentValue;
     // 取得額は手入力(totalCost)がある場合はそれを優先、なければ口数と平均取得価格から計算
@@ -178,7 +177,6 @@ function SortableHoldingItem({
                 className="holding-item"
                 style={contentStyle}
                 {...attributes}
-                {...listeners}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
@@ -189,7 +187,7 @@ function SortableHoldingItem({
                         e.stopPropagation();
                         return;
                     }
-                    if (!isDragging) {
+                    if (!isDragging && !isReorderMode) {
                         onEdit(holding);
                     }
                 }}
@@ -238,6 +236,31 @@ function SortableHoldingItem({
                         </div>
                     )}
                 </div>
+
+                {/* 入れ替え用ドラッグハンドル */}
+                {isReorderMode && (
+                    <div
+                        {...listeners}
+                        style={{
+                            position: 'absolute',
+                            bottom: '0',
+                            left: '0',
+                            right: '0',
+                            height: '24px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'var(--text-muted)',
+                            cursor: 'grab',
+                            touchAction: 'none', // ハンドル上はスクロール禁止
+                            backgroundColor: 'rgba(0,0,0,0.03)', // 微妙な背景色
+                            borderTop: '1px solid rgba(0,0,0,0.05)',
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <i className="fa-solid fa-grip-lines"></i>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -277,18 +300,17 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
     }, []);
 
     // センサー設定
-    // マウス: 10px以上動かしたらドラッグ開始
-    // タッチ: 250ms長押しして5px以上動かさなければドラッグ開始
+    // ハンドルを使用するため、即時反応で問題ない
     const sensors = useSensors(
         useSensor(MouseSensor, {
             activationConstraint: {
-                distance: 10,
+                distance: 5,
             },
         }),
         useSensor(TouchSensor, {
             activationConstraint: {
-                delay: 200,
-                tolerance: 15,
+                delay: 0,
+                tolerance: 5,
             },
         })
     );
@@ -297,6 +319,9 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
     const portfolioHoldings = holdings.filter(h => h.portfolioId === selectedPortfolioId);
     const summary = selectedPortfolioId ? getPortfolioSummary(selectedPortfolioId) : null;
     const targetAllocation = selectedPortfolio?.targetAllocation ?? defaultTarget;
+
+    // 並び替えモード
+    const [isReorderMode, setIsReorderMode] = useState(false);
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('ja-JP', {
@@ -350,6 +375,7 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
 
         switch (cardId) {
             case 'summary':
+                // ... (略)
                 if (!summary) return null;
                 return (
                     <div className="card summary-card" key="summary">
@@ -367,7 +393,6 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
                         {!summaryCollapsed && (
                             <>
                                 <div className="summary-value">{formatCurrency(summary.totalValue)}</div>
-                                {/* 全銘柄に取得額がある場合のみ損益を表示 */}
                                 {allHaveCost && summary.totalCost > 0 && (
                                     <div className={`summary-change ${summary.totalGain >= 0 ? 'positive' : 'negative'}`}>
                                         {summary.totalGain >= 0 ? (
@@ -385,6 +410,7 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
                 );
 
             case 'allocation':
+                // ... (略)
                 if (portfolioHoldings.length === 0 || !summary) return null;
                 return (
                     <div className="card" key="allocation">
@@ -408,6 +434,7 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
                 );
 
             case 'comparison':
+                // ... (略)
                 if (portfolioHoldings.length === 0 || !summary) return null;
                 return (
                     <div className="card" key="comparison">
@@ -450,12 +477,31 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
                                 <h4 className="card-title">保有銘柄</h4>
                                 <span className="holding-count">{portfolioHoldings.length}件</span>
                             </div>
-                            <button
-                                className="collapse-toggle"
-                                onClick={() => setHoldingsCollapsed(!holdingsCollapsed)}
-                            >
-                                <i className={`fa-solid fa-chevron-${holdingsCollapsed ? 'down' : 'up'}`}></i>
-                            </button>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                {/* 入れ替えモード切替ボタン */}
+                                {portfolioHoldings.length > 1 && (
+                                    <button
+                                        className={`btn btn-icon btn-sm ${isReorderMode ? 'active' : ''}`}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsReorderMode(!isReorderMode);
+                                        }}
+                                        title={isReorderMode ? "入れ替え終了" : "入れ替え"}
+                                        style={{
+                                            marginRight: '8px',
+                                            color: isReorderMode ? 'var(--primary-color)' : 'var(--text-muted)'
+                                        }}
+                                    >
+                                        <i className="fa-solid fa-sort"></i>
+                                    </button>
+                                )}
+                                <button
+                                    className="collapse-toggle"
+                                    onClick={() => setHoldingsCollapsed(!holdingsCollapsed)}
+                                >
+                                    <i className={`fa-solid fa-chevron-${holdingsCollapsed ? 'down' : 'up'}`}></i>
+                                </button>
+                            </div>
                         </div>
 
                         {!holdingsCollapsed && (
@@ -487,6 +533,7 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
                                                     formatCurrency={formatCurrency}
                                                     onEdit={handleEditHolding}
                                                     onDeleteRequest={(h) => setDeleteConfirm({ isOpen: true, holding: h })}
+                                                    isReorderMode={isReorderMode}
                                                 />
                                             ))}
                                         </div>
