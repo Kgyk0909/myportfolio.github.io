@@ -199,13 +199,8 @@ function SortableHoldingItem({
                         {holding.accountType && (
                             <span className="holding-account-badge" style={{
                                 fontSize: '0.75rem',
-                                padding: '2px 0', // 背景なし、テキストのみ、左端揃える
-                                // もし背景が必要なら padding: '2px 6px', margin: '0 -6px' のようにするが
-                                // ここではシンプルにテキストとして表示し、位置を揃えることを優先
-                                // 以前のコードでは var(--bg-secondary) が背景だったが、
-                                // 画像を見る限り白背景にテキストのようなので、背景削除または薄くする
-                                // ユーザー指示は「スタート位置が揃っていない」なので、左マージン調整を行う
-                                marginLeft: '-2px', // 微調整
+                                padding: '0', // パディングなし
+                                marginLeft: '0', // 左端揃え
                                 color: 'var(--text-muted)',
                                 width: 'fit-content'
                             }}>
@@ -282,12 +277,6 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
     // センサー設定（長押し250msでドラッグ開始）
     const sensors = useSensors(
         useSensor(PointerSensor, {
-            activationConstraint: {
-                delay: 250,
-                tolerance: 5,
-            },
-        }),
-        useSensor(TouchSensor, {
             activationConstraint: {
                 delay: 250,
                 tolerance: 5,
