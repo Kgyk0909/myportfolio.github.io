@@ -59,21 +59,30 @@ function SortableHoldingItem({
     const [swipeOffset, setSwipeOffset] = useState(0);
     const [isDeleteVisible, setIsDeleteVisible] = useState(false);
     const touchStartX = useRef<number | null>(null);
+    const touchStartY = useRef<number | null>(null);
     const SWIPE_THRESHOLD = -80; // このピクセル以上左に行くと削除ボタン固定
     const MAX_SWIPE = -120; // 最大スワイプ量
 
     const handleTouchStart = (e: React.TouchEvent) => {
         if (isDragging || !e.touches[0]) return;
         touchStartX.current = e.touches[0].clientX;
+        touchStartY.current = e.touches[0].clientY;
     };
 
     const handleTouchMove = (e: React.TouchEvent) => {
-        if (isDragging || touchStartX.current === null || !e.touches[0]) return;
+        if (isDragging || touchStartX.current === null || touchStartY.current === null || !e.touches[0]) return;
         const currentX = e.touches[0].clientX;
-        const diff = currentX - touchStartX.current;
+        const currentY = e.touches[0].clientY;
+        const diffX = currentX - touchStartX.current;
+        const diffY = currentY - touchStartY.current;
+
+        // 縦スクロール判定: X軸移動よりY軸移動が大きい場合はスワイプ判定しない（ブラウザのスクロールに任せる）
+        if (Math.abs(diffY) > Math.abs(diffX)) {
+            return;
+        }
 
         // 左スワイプのみ (または開いた状態からの右スワイプ)
-        let newOffset = (isDeleteVisible ? SWIPE_THRESHOLD : 0) + diff;
+        let newOffset = (isDeleteVisible ? SWIPE_THRESHOLD : 0) + diffX;
 
         // 範囲制限
         if (newOffset > 0) newOffset = 0; // 右に行き過ぎない
@@ -190,9 +199,13 @@ function SortableHoldingItem({
                         {holding.accountType && (
                             <span className="holding-account-badge" style={{
                                 fontSize: '0.75rem',
-                                padding: '2px 6px',
-                                borderRadius: '4px',
-                                background: 'var(--bg-secondary)',
+                                padding: '2px 0', // 背景なし、テキストのみ、左端揃える
+                                // もし背景が必要なら padding: '2px 6px', margin: '0 -6px' のようにするが
+                                // ここではシンプルにテキストとして表示し、位置を揃えることを優先
+                                // 以前のコードでは var(--bg-secondary) が背景だったが、
+                                // 画像を見る限り白背景にテキストのようなので、背景削除または薄くする
+                                // ユーザー指示は「スタート位置が揃っていない」なので、左マージン調整を行う
+                                marginLeft: '-2px', // 微調整
                                 color: 'var(--text-muted)',
                                 width: 'fit-content'
                             }}>
