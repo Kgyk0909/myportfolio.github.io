@@ -30,9 +30,9 @@ export function AllocationInput({ value, onChange }: AllocationInputProps) {
 
         let targetValue = newValue;
 
-        // スナップ処理: 残りの値に近ければ吸着させる (±1.5の範囲)
+        // スナップ処理: 残りの値に近ければ吸着させる (±0.99の範囲)
         // 例: 残りが20で、スライダーを19~21に動かしたら20にする
-        if (Math.abs(newValue - remaining) < 1.5) {
+        if (Math.abs(newValue - remaining) < 0.99) {
             targetValue = remaining;
         }
 
