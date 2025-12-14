@@ -11,7 +11,8 @@ import { getCardConfigs, DEFAULT_CARD_CONFIGS, ACCOUNT_TYPE_LABELS } from '../ty
 import {
     DndContext,
     closestCenter,
-    PointerSensor,
+    MouseSensor,
+    TouchSensor,
     useSensor,
     useSensors,
     DragEndEvent,
@@ -109,7 +110,7 @@ function SortableHoldingItem({
         transform: CSS.Transform.toString(transform),
         transition: isDragging ? undefined : (swipeOffset !== 0 ? 'none' : transition), // スワイプ中はtransitionなし
         opacity: isDragging ? 0.5 : 1,
-        touchAction: 'pan-y', // 縦スクロールは許可、横はJSで制御
+        touchAction: isDragging ? 'none' : 'pan-y', // ドラッグ中はスクロール禁止、それ以外は縦スクロール許可
         position: 'relative' as const,
         marginBottom: '8px',
         overflow: 'hidden' // はみ出し非表示
@@ -122,7 +123,7 @@ function SortableHoldingItem({
         backgroundColor: 'var(--bg-card)', // 背景色必須
         position: 'relative' as const,
         zIndex: 2,
-        touchAction: 'pan-y', // 縦スクロールを許可
+        touchAction: isDragging ? 'none' : 'pan-y', // ドラッグ中はスクロール禁止
         userSelect: 'none' as const, // 長押し時の選択防止
     };
 
@@ -275,9 +276,16 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
         setCardConfigs(getCardConfigs());
     }, []);
 
-    // センサー設定（長押し250msでドラッグ開始）
+    // センサー設定
+    // マウス: 10px以上動かしたらドラッグ開始
+    // タッチ: 250ms長押しして5px以上動かさなければドラッグ開始
     const sensors = useSensors(
-        useSensor(PointerSensor, {
+        useSensor(MouseSensor, {
+            activationConstraint: {
+                distance: 10,
+            },
+        }),
+        useSensor(TouchSensor, {
             activationConstraint: {
                 delay: 250,
                 tolerance: 5,
