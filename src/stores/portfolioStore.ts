@@ -71,6 +71,8 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
                     .where('portfolioId')
                     .equals(firstId)
                     .toArray();
+                // sortOrderでソート
+                holdings.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
                 set({ holdings });
             }
         } catch (error) {
