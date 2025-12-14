@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePortfolioStore } from '../stores/portfolioStore';
 import { AllocationPieChart } from './AllocationPieChart';
 import { AllocationComparisonChart } from './AllocationComparisonChart';
@@ -39,10 +39,12 @@ function SortableHoldingItem({
     holding,
     formatCurrency,
     onEdit,
+    onDeleteRequest // 削除リクエスト用コールバック
 }: {
     holding: Holding;
     formatCurrency: (value: number) => string;
     onEdit: (holding: Holding) => void;
+    onDeleteRequest: (holding: Holding) => void;
 }) {
     const {
         attributes,
@@ -53,13 +55,65 @@ function SortableHoldingItem({
         isDragging,
     } = useSortable({ id: holding.id! });
 
+    // スワイプ削除ロジック
+    const [swipeOffset, setSwipeOffset] = useState(0);
+    const [isDeleteVisible, setIsDeleteVisible] = useState(false);
+    const touchStartX = useRef<number | null>(null);
+    const SWIPE_THRESHOLD = -80; // このピクセル以上左に行くと削除ボタン固定
+    const MAX_SWIPE = -120; // 最大スワイプ量
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (isDragging || !e.touches[0]) return;
+        touchStartX.current = e.touches[0].clientX;
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (isDragging || touchStartX.current === null || !e.touches[0]) return;
+        const currentX = e.touches[0].clientX;
+        const diff = currentX - touchStartX.current;
+
+        // 左スワイプのみ (または開いた状態からの右スワイプ)
+        let newOffset = (isDeleteVisible ? SWIPE_THRESHOLD : 0) + diff;
+
+        // 範囲制限
+        if (newOffset > 0) newOffset = 0; // 右に行き過ぎない
+        if (newOffset < MAX_SWIPE) newOffset = MAX_SWIPE; // 左に行き過ぎない
+
+        setSwipeOffset(newOffset);
+    };
+
+    const handleTouchEnd = () => {
+        if (isDragging || touchStartX.current === null) return;
+        touchStartX.current = null;
+
+        if (swipeOffset < SWIPE_THRESHOLD / 2) {
+            // 十分左にスワイプしたら開く
+            setSwipeOffset(SWIPE_THRESHOLD);
+            setIsDeleteVisible(true);
+        } else {
+            // 戻る
+            setSwipeOffset(0);
+            setIsDeleteVisible(false);
+        }
+    };
+
     const style = {
         transform: CSS.Transform.toString(transform),
-        transition,
+        transition: isDragging ? undefined : (swipeOffset !== 0 ? 'none' : transition), // スワイプ中はtransitionなし
         opacity: isDragging ? 0.5 : 1,
-        touchAction: 'manipulation', // スクロール許可
+        touchAction: 'pan-y', // 縦スクロールは許可、横はJSで制御
         position: 'relative' as const,
-        marginBottom: '8px'
+        marginBottom: '8px',
+        overflow: 'hidden' // はみ出し非表示
+    };
+
+    // コンテンツ部分がスライドするスタイル
+    const contentStyle = {
+        transform: `translateX(${swipeOffset}px)`,
+        transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+        backgroundColor: 'var(--bg-card)', // 背景色必須
+        position: 'relative' as const,
+        zIndex: 2,
     };
 
     // 評価額はcurrentValueを直接使用
@@ -79,36 +133,68 @@ function SortableHoldingItem({
             style={style}
             className={`holding-item-wrapper ${isDragging ? 'dragging' : ''}`}
         >
+            {/* 削除ボタン領域 (背景) */}
+            <div
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    bottom: 0,
+                    right: 0,
+                    width: '120px',
+                    background: 'var(--accent-red)',
+                    display: swipeOffset < 0 ? 'flex' : 'none', // スワイプ中のみ表示
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    paddingRight: '24px',
+                    color: 'white',
+                    zIndex: 1,
+                    fontWeight: 'bold',
+                }}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (isDeleteVisible) {
+                        onDeleteRequest(holding);
+                        setSwipeOffset(0);
+                        setIsDeleteVisible(false);
+                    }
+                }}
+            >
+                <i className="fa-solid fa-trash-can" style={{ marginRight: '8px' }}></i> 削除
+            </div>
+
             {/* メインコンテンツ */}
             <div
                 className="holding-item"
-                onClick={() => {
+                style={contentStyle}
+                {...attributes}
+                {...listeners}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onClick={(e) => {
+                    if (isDeleteVisible) {
+                        setSwipeOffset(0);
+                        setIsDeleteVisible(false);
+                        e.stopPropagation();
+                        return;
+                    }
                     if (!isDragging) {
                         onEdit(holding);
                     }
                 }}
             >
-                {/* ドラッグハンドル */}
-                <div
-                    className="drag-handle-area"
-                    {...attributes}
-                    {...listeners}
-                    onClick={(e) => e.stopPropagation()} // ハンドルクリックで編集が開かないように
-                >
-                    <i className="fa-solid fa-grip-vertical"></i>
-                </div>
-
                 <div className="holding-left">
                     <div className="holding-name">{holding.name || holding.ticker}</div>
-                    <div className="holding-meta-row" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
-                        {holding.ticker && <span className="holding-ticker">{holding.ticker}</span>}
+                    <div className="holding-meta-row" style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                        {holding.ticker && <span className="holding-ticker" style={{ textAlign: 'left' }}>{holding.ticker}</span>}
                         {holding.accountType && (
                             <span className="holding-account-badge" style={{
                                 fontSize: '0.75rem',
                                 padding: '2px 6px',
                                 borderRadius: '4px',
                                 background: 'var(--bg-secondary)',
-                                color: 'var(--text-muted)'
+                                color: 'var(--text-muted)',
+                                width: 'fit-content'
                             }}>
                                 {ACCOUNT_TYPE_LABELS[holding.accountType]}
                             </span>
@@ -389,6 +475,7 @@ export function MainDashboard({ onPortfolioEdit }: MainDashboardProps) {
                                                     holding={holding}
                                                     formatCurrency={formatCurrency}
                                                     onEdit={handleEditHolding}
+                                                    onDeleteRequest={(h) => setDeleteConfirm({ isOpen: true, holding: h })}
                                                 />
                                             ))}
                                         </div>
